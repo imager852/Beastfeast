@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- SEO: title ≤ 60 chars, description ≤ 155 chars -->
+  <title>Beast Feast Canteen | Hong Kong Café &amp; Takeaway Bristol</title>
+  <meta name="description" content="Hong Kong cha chaan teng on Chapel Street, Bristol, with Taiwanese favourites. Cooked fresh to order. Collect for exclusive deals or get delivery.">
+  <link rel="canonical" href="https://www.beastfeast.uk/">
+  <meta name="theme-color" content="#c73a26">
+
+  <meta property="og:type" content="restaurant">
+  <meta property="og:site_name" content="Beast Feast Canteen">
+  <meta property="og:title" content="Beast Feast Canteen 饗獸食堂 | Hong Kong Café, Bristol">
+  <meta property="og:description" content="Hong Kong cha chaan teng classics and Taiwanese favourites. Order for collection or delivery.">
+  <meta property="og:url" content="https://www.beastfeast.uk/">
+  <meta property="og:image" content="https://www.beastfeast.uk/assets/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Braised beef and radish rice bowl with crispy spring rolls and chilli dip">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+  <style>
+/* Layout: rice-paper page, food photo hero with mascot, dark braise-brown order card, seal-red accents */
+:root {
+  color-scheme: light;
+  --rice: #fbf6ee;        /* page: steamed-rice white */
+  --paper: #f4e8d6;       /* alt band: rice paper */
+  --card: #ffffff;
+  --soy: #2b1a10;         /* text + dark bands: soy-braise brown */
+  --soy-2: #3d2618;
+  --soy-muted: #6e5747;
+  --on-soy: #fbf1e3;
+  --on-soy-muted: #d6c2ad;
+  --chili: #c73a26;       /* seal red */
+  --chili-hover: #ad2f1d;
+  --gold: #f0a83c;        /* braise gold */
+  --gold-soft: #fde7c2;
+  --scallion: #4f7d32;
+  --line: rgba(43, 26, 16, .13);
+  --line-on-soy: rgba(251, 241, 227, .18);
+  --radius: 18px;
+  --display: "Bricolage Grotesque", "Arial Rounded MT Bold", system-ui, sans-serif;
+  --brush: "Ma Shan Zheng", "STKaiti", "KaiTi", serif;
+  --body: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+body { margin: 0; background: var(--rice); color: var(--soy); font: 16px/1.6 var(--body); -webkit-font-smoothing: antialiased; }
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; }
+h1, h2, h3, h4 { margin: 0; line-height: 1.08; text-wrap: balance; }
+h2 { font: 800 clamp(2.2rem, 5vw, 3.4rem)/1 var(--display); letter-spacing: -.02em; }
+p { margin: 0 0 1em; }
+[lang="zh"] { font-family: var(--body); }
+
+.wrap { width: min(1160px, 100% - 32px); margin-inline: auto; }
+.skip { position: absolute; left: -999px; top: 8px; background: var(--chili); color: #fff; padding: 8px 12px; border-radius: 8px; z-index: 100; }
+.skip:focus { left: 8px; }
+.eyebrow { font-size: .8rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--chili); margin-bottom: .7rem; }
+.eyebrow [lang="zh"] { letter-spacing: .05em; margin-left: .4em; opacity: .85; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .45em;
+  padding: .9em 1.5em; border-radius: 999px; font-weight: 700; text-decoration: none;
+  border: 2px solid transparent; transition: transform .15s, background .15s, border-color .15s;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn:focus-visible, a:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.btn--chili { background: var(--chili); color: #fff; }
+.btn--chili:hover { background: var(--chili-hover); }
+.btn--gold { background: var(--gold); color: var(--soy); }
+.btn--gold:hover { background: #f7b955; }
+.btn--line { border-color: var(--soy); color: var(--soy); }
+.btn--line:hover { background: var(--soy); color: var(--rice); }
+.btn--line-light { border-color: var(--line-on-soy); color: var(--on-soy); }
+.btn--line-light:hover { border-color: var(--on-soy); }
+.btn--brand { background: var(--brand); color: #fff; }
+.btn--dark-text { color: #1a1a1a; }
+.btn--block { width: 100%; }
+.btn--sm { padding: .6em 1.15em; font-size: .92rem; }
+
+/* Nav */
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50; background: rgba(251, 246, 238, .92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.nav__inner { display: flex; align-items: center; gap: 28px; height: 70px; }
+.nav__logo img { height: 46px; width: auto; mix-blend-mode: multiply; }
+.nav__links { display: flex; gap: 26px; margin-left: auto; }
+.nav__links a { text-decoration: none; font-weight: 600; font-size: .95rem; }
+.nav__links a span { color: var(--soy-muted); font-weight: 400; margin-left: .2em; }
+.nav__links a:hover { color: var(--chili); }
+
+/* Hero */
+.hero { padding: clamp(36px, 6vw, 80px) 0 40px; background: radial-gradient(120% 80% at 85% 10%, var(--gold-soft), transparent 60%), var(--rice); }
+.hero__inner { display: grid; grid-template-columns: 1fr 1.1fr; gap: clamp(32px, 5vw, 64px); align-items: center; }
+.hero__title { font: 800 clamp(2.6rem, 6.2vw, 4.6rem)/1 var(--display); letter-spacing: -.03em; }
+.hero__zh { font: 400 clamp(1.8rem, 3.6vw, 2.6rem)/1.2 var(--brush); color: var(--chili); margin: .35em 0 .5em; }
+.hero__lead { font-size: clamp(1.02rem, 1.5vw, 1.15rem); color: var(--soy-muted); max-width: 40ch; }
+.hero__cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+.hero__media { position: relative; }
+.hero__photo { width: 100%; aspect-ratio: 16 / 10.5; object-fit: cover; border-radius: 28px; box-shadow: 0 30px 60px -30px rgba(43, 26, 16, .5); }
+.hero__mascot { position: absolute; width: clamp(120px, 17vw, 200px); left: clamp(-60px, -4vw, -20px); bottom: -34px; filter: drop-shadow(0 10px 18px rgba(43, 26, 16, .3)); }
+.cats { list-style: none; padding: 0; margin: 56px 0 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 0; }
+.cats li { font-weight: 600; padding: 0 22px; position: relative; }
+.cats li + li::before { content: "✿"; color: var(--chili); position: absolute; left: -7px; }
+.cats [lang="zh"] { font-family: var(--brush); font-size: 1.35rem; color: var(--chili); margin-right: .3em; vertical-align: -2px; }
+
+/* Section heads */
+.section-head { max-width: 640px; margin-bottom: 36px; }
+.section-head p:last-child { color: var(--soy-muted); margin-top: .9rem; }
+
+/* Order */
+.order { padding: clamp(64px, 8vw, 110px) 0; background: var(--paper); }
+.collect {
+  display: grid; grid-template-columns: 1fr auto; gap: 32px 48px; align-items: center;
+  background: var(--soy); color: var(--on-soy); border-radius: 26px; padding: clamp(24px, 4vw, 44px);
+  box-shadow: 0 30px 60px -36px rgba(43, 26, 16, .7);
+}
+.collect h3 { font: 800 clamp(1.7rem, 3.6vw, 2.5rem)/1.05 var(--display); letter-spacing: -.02em; margin: 14px 0 18px; }
+.collect h3 [lang="zh"] { font: 400 .8em var(--brush); color: var(--gold); margin-left: .25em; letter-spacing: 0; }
+.collect__labels { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+.badge { background: var(--gold); color: var(--soy); font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; }
+.chip { font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; border: 1.5px solid var(--on-soy); }
+.ticks { list-style: none; padding: 0; margin: 0 0 20px; display: grid; gap: 10px; }
+.ticks li { position: relative; padding-left: 30px; color: var(--on-soy-muted); }
+.ticks li::before { content: "✓"; position: absolute; left: 0; top: 2px; width: 20px; height: 20px; border-radius: 50%; background: var(--gold); color: var(--soy); font-size: .75rem; font-weight: 800; display: grid; place-items: center; }
+.ticks strong { color: var(--on-soy); }
+.notice { background: rgba(240, 168, 60, .14); border-radius: 10px; padding: 12px 16px; font-size: .95rem; max-width: 60ch; }
+.notice strong { color: var(--gold); }
+.collect__cta { display: flex; flex-wrap: wrap; gap: 12px; }
+.collect__qr { margin: 0; text-align: center; color: var(--on-soy-muted); font-size: .85rem; line-height: 1.4; }
+.collect__qr .qr { width: 168px; height: 168px; background: #fff; padding: 8px; border-radius: 14px; margin: 0 auto 10px; }
+.delivery-head { margin: 56px 0 20px; }
+.delivery-head h3 { font: 800 clamp(1.5rem, 3vw, 2rem)/1.1 var(--display); letter-spacing: -.02em; }
+.delivery-head h3 [lang="zh"] { font: 400 .85em var(--brush); color: var(--chili); margin-left: .25em; }
+.delivery-head p { color: var(--soy-muted); margin: .5rem 0 0; }
+.order__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.platform { display: flex; flex-direction: column; align-items: center; gap: 14px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 16px 16px; text-align: center; }
+.platform h4 { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.platform h4 [lang="zh"] { font-size: .8rem; font-weight: 500; color: var(--soy-muted); }
+.platform h4::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--brand); }
+.platform .qr { width: 132px; height: 132px; }
+.platform__logo { width: 100%; min-height: 72px; display: flex; align-items: center; justify-content: center; }
+.platform__logo--wide { width: 100%; max-width: 160px; height: auto; }
+.platform__logo--mark { width: 64px; height: 64px; }
+
+/* Allergen note */
+.allergen { font-size: .9rem; color: var(--soy-muted); margin: 24px 0 0; }
+.allergen a { font-weight: 600; color: var(--soy); }
+
+/* About */
+.about { padding: clamp(64px, 8vw, 110px) 0; background: var(--paper); }
+.about__inner { display: grid; grid-template-columns: .85fr 1.15fr; gap: clamp(32px, 6vw, 80px); align-items: center; }
+.about__mascot { margin: 0; text-align: center; }
+.about__mascot img { width: min(100%, 420px); margin-inline: auto; filter: drop-shadow(0 18px 24px rgba(43, 26, 16, .22)); }
+.about__mascot figcaption { font-weight: 600; color: var(--soy-muted); margin-top: 8px; }
+.about__mascot [lang="zh"] { font-family: var(--brush); color: var(--chili); font-size: 1.3rem; }
+.about__copy h2 { margin-bottom: 1.1rem; }
+.about__copy > p:not(.eyebrow) { color: var(--soy-muted); font-size: 1.05rem; max-width: 56ch; }
+.pillars { list-style: none; padding: 0; margin: 30px 0 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.pillars li { background: var(--card); border-radius: 14px; padding: 16px; text-align: center; }
+.pillars strong { display: block; font: 400 1.6rem/1.2 var(--brush); color: var(--chili); }
+
+.pillars span { color: var(--soy-muted); font-size: .88rem; }
+
+/* Find us */
+.find { padding: clamp(56px, 8vw, 96px) 0; }
+/* Find us: address + route on the left, map on the right, hours + share row below */
+.find__inner { display: grid; grid-template-columns: 1fr 1.35fr; gap: 32px 56px; align-items: start; }
+.find__side { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; align-items: center; }
+.find h2 { margin-bottom: 1.1rem; }
+address { font-style: normal; color: var(--soy-muted); margin-bottom: 22px; line-height: 1.8; }
+address strong, address a { color: var(--soy); }
+address a { font-weight: 700; }
+.route { list-style: none; counter-reset: step; padding: 0; margin: 0; display: grid; gap: 0; }
+.route li { counter-increment: step; position: relative; padding: 0 0 22px 46px; color: var(--soy-muted); }
+.route li::before { content: counter(step); position: absolute; left: 0; top: -2px; width: 30px; height: 30px; border-radius: 50%; background: var(--chili); color: #fff; font-weight: 800; display: grid; place-items: center; font-size: .85rem; }
+.route li:not(:last-child)::after { content: ""; position: absolute; left: 14px; top: 30px; bottom: 2px; border-left: 2px dashed rgba(199, 58, 38, .4); }
+.route strong { color: var(--soy); }
+.find__side { display: grid; gap: 24px; }
+
+/* Walking map (inline SVG) */
+.find__map { grid-column: 2; grid-row: 1 / span 2; margin: 0; }
+.find__map a { display: block; border-radius: 22px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 24px 50px -34px rgba(43, 26, 16, .55); }
+.find__map a:focus-visible { outline: 3px solid var(--gold); outline-offset: 4px; }
+.find__map svg { display: block; width: 100%; height: auto; font-family: var(--body); }
+.find__map figcaption { font-size: .82rem; color: var(--soy-muted); margin-top: 10px; }
+.m-ground { fill: var(--paper); }
+.m-block rect { fill: #ead9bf; }
+.m-road path { fill: none; stroke: var(--card); stroke-width: 34; stroke-linecap: butt; }
+.m-road-name text { fill: var(--soy-muted); font-size: 14px; font-weight: 700; letter-spacing: .1em; dominant-baseline: middle; }
+.m-unite { fill: rgba(240, 168, 60, .16); stroke: var(--gold); stroke-width: 4; stroke-linejoin: round; }
+.m-unite-tag rect { fill: var(--gold); }
+.m-unite-tag text { fill: var(--soy); font-size: 19px; font-weight: 800; }
+.m-route-glow { fill: none; stroke: rgba(199, 58, 38, .18); stroke-width: 18; stroke-linejoin: round; stroke-linecap: round; }
+.m-route { fill: none; stroke: var(--chili); stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 2 12; }
+.m-step circle { fill: var(--chili); stroke: var(--card); stroke-width: 3; }
+.m-step text { fill: #fff; font-size: 17px; font-weight: 800; text-anchor: middle; }
+.m-pin path { fill: var(--chili); stroke: var(--card); stroke-width: 4; }
+.m-pin-zh { fill: #fff; font: 400 36px var(--brush); }
+.m-shop-tag rect { fill: var(--soy); }
+.m-shop-name { fill: var(--on-soy); font-size: 19px; font-weight: 800; }
+.m-shop-sub { fill: var(--gold); font-size: 15px; font-weight: 600; }
+.m-walk rect { fill: var(--card); stroke: var(--line); }
+.m-walk text { fill: var(--soy); font-size: 17px; font-weight: 700; }
+.m-north circle { fill: var(--card); stroke: var(--line); }
+.m-north path { fill: var(--soy); }
+.m-north text { fill: var(--soy); font-size: 11px; font-weight: 800; }
+.hours { width: 100%; border-collapse: collapse; }
+.hours caption { text-align: left; font-weight: 700; padding-bottom: 6px; }
+.hours th, .hours td { padding: 12px 0; border-bottom: 1px solid var(--line); text-align: left; }
+.hours th { font-weight: 600; }
+.hours td { color: var(--soy-muted); text-align: right; font-variant-numeric: tabular-nums; }
+.flyer { display: flex; gap: 16px; align-items: center; background: var(--paper); border-radius: var(--radius); padding: 14px; }
+.flyer img { width: 88px; height: 88px; background: #fff; padding: 5px; border-radius: 8px; flex: none; }
+.flyer p { margin: 0; color: var(--soy-muted); font-size: .9rem; }
+.flyer strong { display: block; color: var(--soy); }
+
+/* Footer */
+.footer { padding: 32px 0 40px; background: var(--soy); color: var(--on-soy-muted); }
+.footer__inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; font-size: .9rem; }
+.footer__inner p { margin: 0; }
+.footer__brand { display: flex; align-items: center; gap: 10px; color: var(--on-soy); font-weight: 700; font-size: 1.02rem; }
+.footer__brand img { width: 48px; height: auto; }
+.footer__social a { text-decoration: none; }
+.footer__social a:hover { color: var(--on-soy); }
+
+.mobile-order { display: none; }
+
+/* Responsive */
+@media (max-width: 1000px) {
+  .order__grid { grid-template-columns: repeat(2, 1fr); }
+  .find__inner { grid-template-columns: 1fr 1fr; }
+  .find__side { grid-column: span 2; grid-template-columns: 1fr 1fr; align-items: start; }
+}
+@media (max-width: 860px) {
+  .nav__links { display: none; }
+  .nav .btn { margin-left: auto; }
+  .hero__inner, .about__inner { grid-template-columns: 1fr; }
+  .hero__media { margin: 10px 8px 24px; }
+  .hero__mascot { left: -10px; width: 120px; bottom: -30px; }
+  .about__mascot img { width: 260px; }
+}
+@media (max-width: 600px) {
+  .nav__logo img { height: 38px; }
+  /* Phone: every block shares the same left/right edge; buttons go full width */
+  .eyebrow { font-size: .72rem; letter-spacing: .1em; }
+  .hero__lead { max-width: none; }
+  .hero__cta, .collect__cta { flex-direction: column; }
+  .hero__cta .btn, .collect__cta .btn { width: 100%; }
+  .hero__media { margin: 8px 0 20px; }
+  .hero__mascot { left: -6px; width: 104px; bottom: -26px; }
+  .cats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 36px; }
+  .cats li { padding: 10px 12px; background: var(--card); border-radius: 12px; border: 1px solid var(--line); }
+  .cats li + li::before { display: none; }
+  .collect h3 [lang="zh"], .delivery-head h3 [lang="zh"] { display: block; margin: .3em 0 0; }
+  .platform { justify-content: flex-start; }
+  .platform h4 { min-height: 2.9em; align-content: flex-start; row-gap: 0; }
+  .platform h4 [lang="zh"] { flex-basis: 100%; line-height: 1.3; margin-top: 2px; }
+  .find .btn { width: 100%; }
+  .find__map { grid-column: auto; grid-row: auto; margin-top: -8px; }
+  .platform .btn { margin-top: auto; }
+  .pillars { grid-template-columns: 1fr; gap: 8px; }
+  .pillars li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; text-align: left; }
+  .pillars strong { font-size: 1.3rem; }
+  .collect { grid-template-columns: 1fr; }
+  .collect__qr { display: none; }
+  .order__grid { gap: 12px; }
+  .platform { padding: 16px 12px 12px; }
+  .platform .qr { width: 104px; height: 104px; }
+  .platform .btn { font-size: .85rem; padding: .8em .6em; }
+  .find__inner, .find__side { grid-template-columns: 1fr; }
+  .find__side { grid-column: auto; }
+  .mobile-order { display: flex; position: fixed; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 60; box-shadow: 0 10px 30px rgba(43, 26, 16, .4); }
+  .footer { padding-bottom: 100px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .btn { transition: none; }
+}
+
+</style>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Restaurant",
+    "name": "Beast Feast Canteen",
+    "alternateName": "饗獸食堂",
+    "url": "https://www.beastfeast.uk/",
+    "logo": "https://www.beastfeast.uk/assets/logo.webp",
+    "image": "https://www.beastfeast.uk/assets/og-image.jpg",
+    "telephone": "+447999238217",
+    "servesCuisine": ["Hong Kong", "Taiwanese", "Chinese"],
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Unit 2 Chapel Court, Chapel Street",
+      "addressLocality": "Bristol",
+      "postalCode": "BS2 0UL",
+      "addressCountry": "GB"
+    },
+    "acceptsReservations": false,
+    "potentialAction": {
+      "@type": "OrderAction",
+      "target": "https://beastfeast.square.site/",
+      "deliveryMethod": "http://purl.org/goodrelations/v1#DeliveryModePickUp"
+    },
+    "openingHoursSpecification": [
+      { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"], "opens": "11:00", "closes": "20:30" },
+      { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Saturday","Sunday"], "opens": "11:30", "closes": "21:00" }
+    ],
+    "sameAs": ["https://www.instagram.com/beastfeast.uk/", "https://www.facebook.com/share/1CK9sPsEGG/", "https://www.xiaohongshu.com/user/profile/6679cbc500000000030336fe"]
+  }
+  </script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav" id="top">
+    <div class="wrap nav__inner">
+      <a class="nav__logo" href="#top"><img src="assets/logo.webp" alt="Beast Feast Canteen 饗獸食堂" width="640" height="228"></a>
+      <nav class="nav__links" aria-label="Main">
+        <a href="#about">About <span lang="zh">关于</span></a>
+        <a href="#find">Find us <span lang="zh">地址</span></a>
+      </nav>
+      <a class="btn btn--chili btn--sm" href="#order">Order <span lang="zh">点餐</span></a>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="wrap hero__inner">
+        <div class="hero__copy">
+          <p class="eyebrow">Hong Kong café · Chapel Street, Bristol</p>
+          <h1 class="hero__title">Authentic flavour, made with favour.</h1>
+          <p class="hero__zh" lang="zh">匠心巧制，用心制作</p>
+          <p class="hero__lead">Hong Kong cha chaan teng classics with Taiwanese favourites: rice boxes, noodles, street-food tapas and desserts, cooked fresh to order. Two minutes' walk from Unite Students.</p>
+          <div class="hero__cta">
+            <a class="btn btn--chili" href="#collect">Order for collection</a>
+            <a class="btn btn--line" href="#delivery">Get it delivered</a>
+          </div>
+        </div>
+        <div class="hero__media">
+          <img class="hero__photo" src="assets/hero.webp" alt="Braised beef and radish rice bowl with crispy spring rolls and chilli dip" width="1600" height="900" fetchpriority="high">
+          <img class="hero__mascot" src="assets/mascot.webp" alt="" width="720" height="663">
+        </div>
+      </div>
+      <div class="wrap">
+        <ul class="cats" aria-label="What we serve">
+          <li><span lang="zh">盖饭</span> Rice boxes</li>
+          <li><span lang="zh">面类</span> Noodles</li>
+          <li><span lang="zh">小吃</span> Tapas</li>
+          <li><span lang="zh">甜点</span> Desserts</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ORDER -->
+    <section class="order" id="order" aria-labelledby="order-title">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Hungry? <span lang="zh">饿了吗？</span></p>
+          <h2 id="order-title">Order your way</h2>
+          <p>Collect it yourself and save, or get it delivered. Tap a button or scan a QR code with your phone camera.</p>
+        </div>
+
+        <article class="collect" id="collect" aria-labelledby="collect-title">
+          <div class="collect__copy">
+            <p class="collect__labels"><span class="badge">Save more</span><span class="chip">Collection only</span></p>
+            <h3 id="collect-title">Order direct &amp; collect <span lang="zh">到店自取</span></h3>
+            <ul class="ticks">
+              <li><strong>Cheaper when you order &amp; collect yourself</strong> than ordering on the delivery apps</li>
+              <li><strong>Exclusive meal deals</strong> only on our own site</li>
+              <li><strong>Collect from</strong> Unit 2 Chapel Court, Chapel Street, Bristol BS2 0UL</li>
+            </ul>
+            <p class="notice" role="note"><strong>Collection only.</strong> Orders on our own site are not delivered. For delivery, choose an app below.</p>
+            <div class="collect__cta">
+              <a class="btn btn--gold" href="https://beastfeast.square.site/" target="_blank" rel="noopener">Order for collection</a>
+              <a class="btn btn--line-light" href="https://www.google.com/maps/search/?api=1&amp;query=Unit+2+Chapel+Court+Chapel+Street+Bristol+BS2+0UL" target="_blank" rel="noopener">Directions</a>
+            </div>
+          </div>
+          <figure class="collect__qr">
+            <img class="qr" src="assets/qr-collect.svg" alt="QR code to order direct from Beast Feast Canteen for collection" width="168" height="168">
+            <figcaption>Scan to order<br>for collection</figcaption>
+          </figure>
+        </article>
+
+        <div class="delivery-head" id="delivery">
+          <h3>Delivery to your door <span lang="zh">外卖送餐</span></h3>
+          <p>Delivered by our partners. See the full menu on your favourite app.</p>
+        </div>
+        <div class="order__grid">
+          <article class="platform" style="--brand:#06c167">
+            <h4>Uber Eats</h4>
+            <div class="platform__logo"><img src="assets/ubereats-logo.svg" alt="Uber Eats" width="134" height="24" class="platform__logo--wide" loading="lazy"></div>
+            <a aria-label="Order Beast Feast Canteen on Uber Eats" class="btn btn--brand btn--block" href="https://www.ubereats.com/gb/store/beast-feast-canteen-%E9%A5%97%E7%8D%B8%E9%A3%9F%E5%A0%82/lJ6bOQ3OVVaMHQfI1uSPeg" target="_blank" rel="noopener">Order now →</a>
+          </article>
+          <article class="platform" style="--brand:#00ccbc">
+            <h4>Deliveroo</h4>
+            <div class="platform__logo"><img src="assets/deliveroo-logo.svg" alt="Deliveroo" width="24" height="24" class="platform__logo--mark" loading="lazy"></div>
+            <a aria-label="Order Beast Feast Canteen on Deliveroo" class="btn btn--brand btn--block" href="https://deliveroo.co.uk/menu/bristol/st-philips-marsh/beast-feast-unit-2-chapel-court" target="_blank" rel="noopener">Order now →</a>
+          </article>
+          <article class="platform" style="--brand:#ff8000">
+            <h4>Just Eat</h4>
+            <div class="platform__logo"><img src="assets/justeat-logo.svg" alt="Just Eat" width="24" height="24" class="platform__logo--mark" loading="lazy"></div>
+            <a aria-label="Order Beast Feast Canteen on Just Eat" class="btn btn--brand btn--block" href="https://www.just-eat.co.uk/restaurants-beast-feast-bristol/menu" target="_blank" rel="noopener">Order now →</a>
+          </article>
+          <article class="platform" style="--brand:#ffd400">
+            <h4>HungryPanda <span lang="zh">熊猫外卖</span></h4>
+            <div class="platform__logo"><img src="assets/hungrypanda-logo.png" alt="HungryPanda 熊猫外卖" width="400" height="89" class="platform__logo--wide" loading="lazy"></div>
+            <a aria-label="Order Beast Feast Canteen on HungryPanda" class="btn btn--brand btn--block btn--dark-text" href="https://www.hungrypanda.co/" target="_blank" rel="noopener">Order now →</a>
+          </article>
+        </div>
+        <p class="allergen">Allergies or dietary needs? Please tell us before you order: call <a href="tel:+447999238217">07999 238 217</a>.</p>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="about" id="about" aria-labelledby="about-title">
+      <div class="wrap about__inner">
+        <figure class="about__mascot">
+          <img src="assets/mascot.webp" alt="Our mascot, a little fire-tailed beast with a jade necklace" width="720" height="663">
+          <figcaption>Meet our beast <span lang="zh">饗獸</span></figcaption>
+        </figure>
+        <div class="about__copy">
+          <p class="eyebrow">Our story <span lang="zh">关于我们</span></p>
+          <h2 id="about-title">A canteen for big appetites</h2>
+          <p>Beast Feast Canteen <span lang="zh">饗獸食堂</span> is a Hong Kong-style cha chaan teng <span lang="zh-HK">茶餐廳</span> on Chapel Street, Bristol, just two minutes' walk from Unite Students. We serve Hong Kong café classics alongside favourites from Taiwan, for big appetites: rice boxes, noodles, street-food tapas and desserts.</p>
+          <p>Every dish is cooked fresh to order, in generous portions. Collect from us for the best value and our exclusive meal deals, or get it delivered across Bristol with Uber Eats, Deliveroo, Just Eat or HungryPanda.</p>
+          <ul class="pillars">
+            <li><strong>匠心巧制</strong><span>Crafted with care</span></li>
+            <li><strong>用心制作</strong><span>Made with heart</span></li>
+            <li><strong>新鲜现做</strong><span>Cooked fresh to order</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- FIND US -->
+    <section class="find" id="find" aria-labelledby="find-title">
+      <div class="wrap find__inner">
+        <div>
+          <p class="eyebrow">Visit &amp; collect <span lang="zh">如何找到我们</span></p>
+          <h2 id="find-title">Find us</h2>
+          <address>
+            <strong>Beast Feast Canteen <span lang="zh">饗獸食堂</span></strong><br>
+            Unit 2 Chapel Court, Chapel Street<br>
+            Bristol BS2 0UL<br>
+            <a href="tel:+447999238217">07999 238 217</a>
+          </address>
+          <a class="btn btn--chili" href="https://www.google.com/maps/search/?api=1&amp;query=Unit+2+Chapel+Court+Chapel+Street+Bristol+BS2+0UL" target="_blank" rel="noopener">Get directions</a>
+        </div>
+        <ol class="route" aria-label="Walking route from Unite Students">
+          <li>Start at <strong>Unite Students</strong></li>
+          <li>Cross <strong>Albert Road</strong></li>
+          <li>Turn right onto <strong>Chapel Street</strong></li>
+          <li>We're at <strong>Unit 2 Chapel Court</strong>, about 2 minutes' walk</li>
+        </ol>
+        <figure class="find__map">
+          <a href="https://www.google.com/maps/search/?api=1&amp;query=Unit+2+Chapel+Court+Chapel+Street+Bristol+BS2+0UL" target="_blank" rel="noopener" aria-label="Open our location in Google Maps">
+            <svg viewBox="0 0 600 440" role="img" aria-labelledby="map-title map-desc">
+              <title id="map-title">Walking map from Unite Students to Beast Feast Canteen</title>
+              <desc id="map-desc">From Unite Students, cross Albert Road, turn right, then follow Chapel Street to Unit 2 Chapel Court. About 2 minutes' walk.</desc>
+              <rect class="m-ground" width="600" height="440"/>
+              <g class="m-block">
+                <rect x="276" y="112" width="70" height="132" rx="6"/>
+                <rect x="360" y="122" width="74" height="122" rx="6"/>
+                <rect x="520" y="112" width="70" height="132" rx="6"/>
+                <rect x="276" y="306" width="104" height="124" rx="6"/>
+                <rect x="394" y="306" width="150" height="124" rx="6"/>
+                <rect x="30" y="372" width="150" height="58" rx="6"/>
+                <rect x="10" y="150" width="14" height="190" rx="4"/>
+              </g>
+              <g class="m-road">
+                <path d="M-20 116 L210 -16"/>
+                <path d="M240 -20 V274"/>
+                <path d="M240 274 L222 460"/>
+                <path d="M240 274 H620"/>
+                <path d="M490 20 V274"/>
+              </g>
+              <g class="m-road-name">
+                <text transform="translate(92 52) rotate(-29.8)" text-anchor="middle">FEEDER ROAD</text>
+                <text transform="translate(240 120) rotate(90)" text-anchor="middle">ALBERT ROAD</text>
+                <text transform="translate(230 380) rotate(-84.5)" text-anchor="middle">VICTORIA RD</text>
+                <text x="548" y="274" text-anchor="middle">CHAPEL ST</text>
+              </g>
+              <path class="m-unite" d="M30 130 H200 V344 H120 V310 H30 Z"/>
+              <g class="m-unite-tag">
+                <rect x="36" y="200" width="158" height="46" rx="12"/>
+                <text x="115" y="229" text-anchor="middle">Unite Students</text>
+              </g>
+              <path class="m-route-glow" d="M200 196 H264 V264 H444 V220"/>
+              <path class="m-route" d="M200 196 H264 V264 H444 V220"/>
+              
+              <g class="m-pin">
+                <path d="M444 222 C444 222 410 186 410 160 A34 34 0 1 1 478 160 C478 186 444 222 444 222 Z"/>
+                <text class="m-pin-zh" x="444" y="173" text-anchor="middle">饗</text>
+              </g>
+              <g class="m-step m-step--top">
+                <circle cx="200" cy="196" r="17"/><text x="200" y="202">1</text>
+                <circle cx="240" cy="196" r="17"/><text x="240" y="202">2</text>
+                <circle cx="264" cy="264" r="17"/><text x="264" y="270">3</text>
+                <circle cx="478" cy="210" r="17"/><text x="478" y="216">4</text>
+              </g>
+              <g class="m-shop-tag">
+                <rect x="300" y="24" width="232" height="66" rx="14"/>
+                <text class="m-shop-name" x="416" y="53" text-anchor="middle">Beast Feast Canteen</text>
+                <text class="m-shop-sub" x="416" y="76" text-anchor="middle">Unit 2 Chapel Court</text>
+              </g>
+              <g class="m-walk">
+                <rect x="318" y="350" width="196" height="46" rx="23"/>
+                <text x="416" y="379" text-anchor="middle">About 2 mins’ walk</text>
+              </g>
+              <g class="m-north" transform="translate(556 396)">
+                <circle r="24"/>
+                <path d="M0 -15 L8 7 L0 2 L-8 7 Z"/>
+                <text y="19" text-anchor="middle">N</text>
+              </g>
+            </svg>
+          </a>
+          <figcaption>Map not to scale. Tap to open in Google Maps.</figcaption>
+        </figure>
+        <div class="find__side">
+          <table class="hours">
+            <caption>Opening hours <span lang="zh">营业时间</span></caption>
+            <tr><th scope="row">Mon – Fri</th><td><time datetime="11:00">11am</time> – <time datetime="20:30">8:30pm</time></td></tr>
+            <tr><th scope="row">Sat – Sun</th><td><time datetime="11:30">11:30am</time> – <time datetime="21:00">9pm</time></td></tr>
+          </table>
+          <div class="flyer">
+            <img src="assets/qr-site.svg" alt="QR code to this website's order section" width="96" height="96">
+            <p><strong>Share us</strong>Scan to open this page. Print it on flyers and bags.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer__inner">
+      <p class="footer__brand"><img src="assets/mascot.webp" alt="" width="48" height="44"><span>Beast Feast Canteen <span lang="zh">饗獸食堂</span></span></p>
+      <p class="footer__social"><a href="https://www.instagram.com/beastfeast.uk/" target="_blank" rel="noopener">Instagram @beastfeast.uk</a> · <a href="https://www.facebook.com/share/1CK9sPsEGG/" target="_blank" rel="noopener">Facebook</a> · <a href="https://xhslink.cn/m/6h6XtgQ4ggm" target="_blank" rel="noopener" lang="zh">小红书</a></p>
+      <p class="footer__small">© <span id="year">2026</span> Beast Feast Canteen, Bristol</p>
+    </div>
+  </footer>
+
+  <a class="mobile-order btn btn--chili" href="#order">Order <span lang="zh">点餐</span></a>
+
+  <script>
+// Footer year
+document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
