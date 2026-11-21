@@ -1,5 +1,7 @@
 # Beast Feast Canteen 饗獸食堂 — Website
 
+> **所屬項目：Beast Feast 饗獸食堂** ｜ 網址：https://www.beastfeast.uk （經 GitHub Pages 發佈，網域設定見下方 Hosting）
+
 Single-page site for Beast Feast Canteen, Chapel Street, Bristol
 (`https://www.beastfeast.uk/`). Static HTML, no build step.
 
