@@ -410,7 +410,7 @@ function renderList(){
       '<span class="badge low"'+(isLow(it)?'':' hidden')+'>低</span></div>'+
       (lastVal(it)!==null?'<button class="prev" data-copy="'+esc(lastVal(it))+'" title="按一下填入相同數量">上次 '+esc(lastFmt(it))+'</button>':'')+'</div>'+
       '<div class="qty"><button data-d="-1" aria-label="減">−</button>'+
-      '<input inputmode="decimal" enterkeyhint="next" value=""'+esc(st.counts[it.id]??'')+'" placeholder="—" aria-label="現有數量">'+
+      '<input inputmode="decimal" enterkeyhint="next" value="'+esc(st.counts[it.id]??'')+'" placeholder="—" aria-label="現有數量">'+
       '<button data-d="1" aria-label="加">+</button><span class="unit">'+esc(it.unit)+'</span></div></div>';
   });
   $('list').innerHTML=count?html:'<div class="empty">'+(filter==='todo'?'全部已填 ✓':'沒有符合的貨品')+'</div>';
