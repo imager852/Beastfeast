@@ -410,7 +410,7 @@ function renderList(){
       '<span class="badge low"'+(isLow(it)?'':' hidden')+'>低</span></div>'+
       (lastVal(it)!==null?'<button class="prev" data-copy="'+esc(lastVal(it))+'" title="按一下填入相同數量">上次 '+esc(lastFmt(it))+'</button>':'')+'</div>'+
       '<div class="qty"><button data-d="-1" aria-label="減">−</button>'+
-      '<input inputmode="decimal" value="'+esc(st.counts[it.id]??'')+'" placeholder="—" aria-label="現有數量">'+
+      '<input inputmode="decimal" enterkeyhint="next" value=""'+esc(st.counts[it.id]??'')+'" placeholder="—" aria-label="現有數量">'+
       '<button data-d="1" aria-label="加">+</button><span class="unit">'+esc(it.unit)+'</span></div></div>';
   });
   $('list').innerHTML=count?html:'<div class="empty">'+(filter==='todo'?'全部已填 ✓':'沒有符合的貨品')+'</div>';
@@ -438,8 +438,21 @@ $('list').addEventListener('input',e=>{
   const v=e.target.value.replace(',','.').trim();
   if(v==='')delete st.counts[it.id];else st.counts[it.id]=v;
   save();refreshRow(row,it);
+  // auto-advance: after a short pause in typing, jump to the next item's field
+  clearTimeout(advTimer);
+  if(v!==''&&!/[.\/]$/.test(v)){const inp=e.target;advTimer=setTimeout(()=>{if(document.activeElement===inp)focusNext(inp)},ADV_MS)}
+});
+const ADV_MS=1000;let advTimer=null;
+function focusNext(inp){
+  const all=[...$('list').querySelectorAll('.item input')],n=all[all.indexOf(inp)+1];
+  if(n){n.focus();n.scrollIntoView({block:'center',behavior:'smooth'})}
+  else{inp.blur();toast('此分頁已到最後一項')}
+}
+$('list').addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'&&e.key==='Enter'){e.preventDefault();clearTimeout(advTimer);focusNext(e.target)}
 });
 $('list').addEventListener('focusin',e=>{if(e.target.tagName==='INPUT')e.target.select()});
+$('list').addEventListener('focusout',()=>clearTimeout(advTimer));
 
 function updateProg(){
   const d=items.filter(filled).length;
