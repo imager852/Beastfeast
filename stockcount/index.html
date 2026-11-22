@@ -528,6 +528,7 @@ async function loadData(){
     const [it,lt]=await Promise.all([getJson('items.json'),getJson('history/latest.json')]);
     if(!it)throw new Error('找不到貨品清單 items.json');
     buildItems(it.data);latest=lt?lt.data:null;
+    if(!latest){try{latest=JSON.parse(localStorage.getItem(LKEY))}catch(e){}} // first run: reuse this phone's temporary-mode record
     $('loginMsg').textContent='';startApp();
   }catch(err){
     console.error(err);
