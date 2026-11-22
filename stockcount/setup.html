@@ -32,7 +32,7 @@ code{background:#f4e8d6;padding:1px 4px;border-radius:4px}
     <li>在下面填入 token 和員工登入密碼，按「生成設定」。</li>
     <li>把生成的內容存成 <code>stockcount/config.js</code>（Beastfeast 倉庫）。</li>
   </ol>
-  <p class="muted">Token 只會在這個瀏覽器內用登入密碼加密，不會傳送到其他地方。密碼越長越安全，建議至少 8 個字元，混合英文和數字。</p>
+  <p class="muted">Token 只會在這個瀏覽器內用登入密碼加密，不會傳送到其他地方。所有員工共用同一個密碼。密碼越長越安全：4 位數字（例如 1234）只能擋住一般人，建議用 8 個字元以上、混合英文和數字。</p>
 </div>
 <div class="card">
   <label for="token">GitHub token</label>
@@ -63,7 +63,8 @@ $('go').onclick=async()=>{
   const token=$('token').value.trim(),repo=$('repo').value.trim(),branch=$('branch').value.trim()||'main',code=$('code').value;
   if(!token||!repo||!code)return msg('請填寫所有欄位','err');
   if(code!==$('code2').value)return msg('兩次密碼不一致','err');
-  if(code.length<8)return msg('密碼最少 8 個字元','err');
+  if(code.length<4)return msg('密碼最少 4 個字元','err');
+  if(code.length<8&&!confirm('密碼少於 8 個字元，懂技術的人可以在幾分鐘內破解並讀取記錄。仍然使用？'))return;
   msg('檢查 token…');
   try{
     const r=await fetch('https://api.github.com/repos/'+repo,{headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json'}});
