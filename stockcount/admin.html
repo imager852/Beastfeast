@@ -153,7 +153,7 @@ function changed(si,ci,ii){const a=LIST[si].categories[ci].items[ii],b=orig[si].
 function wasText(si,ci,ii){const a=LIST[si].categories[ci].items[ii],b=orig[si].categories[ci].items[ii];
   return F.filter(f=>(a[f]||'')!==(b[f]||'')).map(f=>'原本'+(f==='source'?'供應商':'預期')+'：'+esc(b[f]||'（空）')).join('　')}
 function changes(){let n=0;LIST.forEach((sh,si)=>sh.categories.forEach((c,ci)=>c.items.forEach((it,ii)=>{if(changed(si,ci,ii))n++})));return n}
-// Source picker: fixed supplier buttons (multi-select) + Other free text; saved as "A/B/other"
+// Source picker: fixed supplier buttons (multi-select) + Other free text; saved as "A/B/C" sorted A-Z
 const SRC=['BF','Booker','Costco','TA','WYH'];
 function parseSrc(src){
   const parts=(src||'').split('/').map(x=>x.trim()).filter(Boolean),on=new Set(),other=[];
@@ -169,7 +169,9 @@ function chipsHtml(k,src){
 function readSrc(row){
   const on=[...row.querySelectorAll('.chips button.on')].map(b=>b.dataset.v);
   const oth=row.querySelector('.oth').value.trim();
-  return SRC.filter(x=>on.includes(x)).concat(on.includes('__other')&&oth?[oth]:[]).join('/');
+  // all suppliers, including Other names, joined A-Z (case-insensitive)
+  const parts=SRC.filter(x=>on.includes(x)).concat(on.includes('__other')?oth.split('/').map(x=>x.trim()).filter(Boolean):[]);
+  return parts.sort((a,b)=>a.toLowerCase().localeCompare(b.toLowerCase())).join('/');
 }
 function setSrc(row){
   const [si,ci,ii]=row.querySelector('.chips').dataset.k.split('.').map(Number);
