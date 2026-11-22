@@ -86,6 +86,8 @@ textarea{min-height:90px;resize:vertical}
 .pbar{height:6px;background:var(--paper);border-radius:3px;margin-top:5px;overflow:hidden}
 .pbar i{display:block;height:100%;background:var(--scallion);width:0}
 .bar .btn{width:auto;padding:12px 20px}
+.bar .undo{border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 14px;font-weight:600;font-size:15px}
+.bar .undo:disabled{opacity:.35}
 
 /* review */
 .sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
@@ -216,6 +218,7 @@ textarea{min-height:90px;resize:vertical}
 
 <div class="bar hidden" id="bar"><div class="in">
   <div class="prog"><b id="pDone">0</b> / <span id="pAll">0</span> 已填<div class="pbar"><i id="pFill"></i></div></div>
+  <button class="undo" id="undoBtn" disabled aria-label="復原上一個輸入">↶ 復原</button>
   <button class="btn" id="reviewBtn">完成 →</button>
 </div></div>
 
@@ -434,10 +437,11 @@ function refreshRow(row,it){
 }
 $('list').addEventListener('click',e=>{
   const c=e.target.closest('button[data-copy]');
-  if(c){const row=c.closest('.item'),it=byId(row.dataset.id);row.querySelector('input').value=c.dataset.copy;
+  if(c){const row=c.closest('.item'),it=byId(row.dataset.id);pushUndo(it.id,st.counts[it.id]);row.querySelector('input').value=c.dataset.copy;
     st.counts[it.id]=c.dataset.copy;save();refreshRow(row,it);if(row.contains(document.activeElement))document.activeElement.blur();hideSoon(row);return}
   const b=e.target.closest('button[data-d]');if(!b)return;
   const row=b.closest('.item'),it=byId(row.dataset.id),inp=row.querySelector('input');
+  pushUndo(it.id,st.counts[it.id]);
   let v=parseFloat(inp.value);if(isNaN(v))v=0;else v=Math.max(0,v+ +b.dataset.d);
   if(!filled(it)&&b.dataset.d==='-1')v=0;
   inp.value=+v.toFixed(2);st.counts[it.id]=inp.value;save();refreshRow(row,it);if(row.contains(document.activeElement))document.activeElement.blur();hideSoon(row);
@@ -446,6 +450,7 @@ $('list').addEventListener('input',e=>{
   if(e.target.tagName!=='INPUT')return;
   const row=e.target.closest('.item'),it=byId(row.dataset.id);
   const v=e.target.value.replace(',','.').trim();
+  if(!e.target._pushed){e.target._pushed=true;pushUndo(it.id,e.target._start)} // one undo step per typing session
   if(v==='')delete st.counts[it.id];else st.counts[it.id]=v;
   save();refreshRow(row,it);hideSoon(row);
   // auto-advance: after a short pause in typing, jump to the next item's field
@@ -461,7 +466,23 @@ function focusNext(inp){
 $('list').addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'&&e.key==='Enter'){e.preventDefault();clearTimeout(advTimer);focusNext(e.target)}
 });
-$('list').addEventListener('focusin',e=>{if(e.target.tagName==='INPUT')e.target.select()});
+$('list').addEventListener('focusin',e=>{if(e.target.tagName!=='INPUT')return;e.target.select();
+  const it=byId(e.target.closest('.item').dataset.id);e.target._start=st.counts[it.id];e.target._pushed=false});
+
+// ---------- undo ----------
+// Stack of {id, prev}: prev is the value before the change (undefined = was empty).
+let undoStack=[];
+function pushUndo(id,prev){undoStack.push({id,prev});if(undoStack.length>100)undoStack.shift();$('undoBtn').disabled=false}
+$('undoBtn').onclick=()=>{
+  const u=undoStack.pop();$('undoBtn').disabled=!undoStack.length;if(!u)return;
+  clearTimeout(advTimer);if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+  if(u.prev===undefined||u.prev==='')delete st.counts[u.id];else st.counts[u.id]=u.prev;save();
+  const it=byId(u.id);if(it.sheet!==tab&&!$('q').value){tab=it.sheet}
+  renderTabs();renderList();updateProg();
+  const row=$('list').querySelector('.item[data-id="'+u.id+'"]');
+  if(row){row.scrollIntoView({block:'center',behavior:'smooth'});row.animate([{background:'#fde7c2'},{background:'#fff'}],{duration:1200})}
+  toast('已復原：'+split(it.name)[0]+' → '+(filled(it)?fmt(it):'未填'));
+};
 $('list').addEventListener('focusout',e=>{clearTimeout(advTimer);const row=e.target.closest&&e.target.closest('.item');if(row)hideSoon(row)});
 // "未填" filter: a row that has been counted slides away shortly after the staff move on
 const HIDE_MS=800;
