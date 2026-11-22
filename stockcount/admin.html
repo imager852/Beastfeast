@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>BF 預期數量</title>
+<link rel="icon" href="../assets/logo.webp">
+<style>
+:root{
+  --rice:#fbf6ee;--paper:#f4e8d6;--soy:#2b1a10;--muted:#6e5747;--on-soy:#fbf1e3;
+  --chili:#c73a26;--gold:#f0a83c;--gold-soft:#fde7c2;--ok:#4f7d32;--line:rgba(43,26,16,.13);
+  --body:"Inter","PingFang TC","PingFang SC","Microsoft JhengHei",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--rice);color:var(--soy);font-family:var(--body);font-size:16px;line-height:1.35}
+button,input{font:inherit;color:inherit}
+header{background:var(--soy);color:var(--on-soy);padding:calc(env(safe-area-inset-top) + 12px) 16px 12px}
+header h1{margin:0;font-size:17px}
+header small{display:block;opacity:.75;font-size:12px}
+main{max-width:720px;margin:0 auto;padding:12px 16px 110px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.t{width:100%;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:16px;background:#fff}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:14px;font-weight:600;background:var(--chili);color:#fff}
+.btn.ghost{background:#fff;border:1px solid var(--line);color:var(--soy)}
+.btn+.btn{margin-top:10px}
+.muted{color:var(--muted);font-size:13px}
+.hidden{display:none!important}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.tab{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px;font-weight:600}
+.tab.on{background:var(--soy);color:var(--on-soy)}
+.cat{margin:16px 0 6px;font-size:14px;font-weight:700;color:var(--muted)}
+.row{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.row.chg{border-color:var(--gold);background:#fffdf6}
+.row .i{flex:1;min-width:0}
+.nm{font-weight:600;font-size:15px}
+.zh{font-weight:600;font-size:15px}
+.src{font-size:12px;color:var(--muted)}
+.row input{width:96px;text-align:center;border:1px solid var(--line);border-radius:10px;padding:10px 4px;font-size:16px;font-weight:600}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 16px calc(env(safe-area-inset-bottom) + 10px)}
+.bar .in{max-width:720px;margin:0 auto;display:flex;gap:12px;align-items:center}
+.bar .in span{flex:1;font-size:13px;color:var(--muted)}
+.bar .btn{width:auto;padding:12px 22px}
+textarea{width:100%;min-height:140px;font-family:ui-monospace,Menlo,monospace;font-size:11px;border:1px solid var(--line);border-radius:10px;padding:8px}
+ol{padding-left:20px;font-size:14px;margin:8px 0}
+.err{color:var(--chili)}.ok{color:var(--ok)}
+</style>
+</head>
+<body>
+<header><h1>預期數量管理<small>Beast Feast 盤點 · Expected stock</small></h1></header>
+
+<main id="vLogin">
+  <div class="card">
+    <label class="muted" for="code">登入密碼</label>
+    <input class="t" id="code" type="password" autocomplete="current-password" style="margin-top:4px">
+    <div style="height:12px"></div>
+    <button class="btn" id="loginBtn">登入</button>
+    <p class="muted" id="loginMsg"></p>
+  </div>
+</main>
+
+<main id="vEdit" class="hidden">
+  <p class="muted">直接修改「預期」，例如 <b>2包</b>、<b>10瓶</b>、<b>1/2盒</b>。留空 = 沒有預期（填 0 才算低於預期）。改過的項目會以黃色標示。</p>
+  <div class="tabs" id="tabs"></div>
+  <input class="t" id="q" type="search" placeholder="搜尋貨品…">
+  <div id="list"></div>
+</main>
+
+<main id="vSaved" class="hidden">
+  <div class="card" id="savedMsg"></div>
+  <div class="card hidden" id="manual">
+    <b>最後一步：更新網站上的清單</b>
+    <ol>
+      <li>按下面「複製」。</li>
+      <li>打開 <a id="ghLink" target="_blank" rel="noopener">GitHub 上的 items.js</a>，按右上角鉛筆（Edit）。</li>
+      <li>全選刪除原有內容，貼上，按「Commit changes」。</li>
+    </ol>
+    <p class="muted">約 1–2 分鐘後所有員工刷新網頁就會看到新的預期數量。也可以把內容貼給 Claude 代你更新。</p>
+    <textarea id="out" readonly></textarea>
+    <div style="height:10px"></div>
+    <button class="btn" id="copyBtn">複製</button>
+  </div>
+  <button class="btn ghost" id="againBtn">繼續修改</button>
+</main>
+
+<div class="bar hidden" id="bar"><div class="in"><span id="chgCount">未有修改</span><button class="btn" id="saveBtn" disabled>儲存</button></div></div>
+
+<script src="items.js"></script>
+<script src="config.js"></script>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const LOCAL=!window.STOCK_CONFIG;
+const LOCAL_CODE_SHA256='03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4';
+const SKEY='bf-stockcount-session';
+const enc=new TextEncoder(),dec=new TextDecoder();
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function b64(u8){let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
+function unb64(b){return Uint8Array.from(atob(b.replace(/\s/g,'')),c=>c.charCodeAt(0))}
+function split(n){const i=n.search(/[㐀-鿿]/);return i>0?[n.slice(0,i).trim(),n.slice(i).trim()]:[n,'']}
+
+let gh=null,LIST=null,orig=null,sha=null,tab=0;
+
+async function unlock(code){
+  if(LOCAL){
+    const h=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(code)))).map(b=>b.toString(16).padStart(2,'0')).join('');
+    return h===LOCAL_CODE_SHA256?{local:true}:null;
+  }
+  const C=window.STOCK_CONFIG;
+  const base=await crypto.subtle.importKey('raw',enc.encode(code),'PBKDF2',false,['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt:unb64(C.salt),iterations:C.iter,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+  return JSON.parse(dec.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(C.iv)},key,unb64(C.data))));
+}
+function url(path){return 'https://api.github.com/repos/'+gh.repo+'/contents/'+path}
+const hdr=()=>({Authorization:'Bearer '+gh.token,Accept:'application/vnd.github+json'});
+
+async function load(){
+  if(gh.local){LIST=JSON.parse(JSON.stringify(window.STOCK_LIST));return}
+  const r=await fetch(url('items.json')+'?ref='+encodeURIComponent(gh.branch),{headers:hdr(),cache:'no-store'});
+  if(!r.ok)throw new Error('GitHub '+r.status);
+  const j=await r.json();sha=j.sha;LIST=JSON.parse(dec.decode(unb64(j.content)));
+}
+
+function show(v){
+  ['vLogin','vEdit','vSaved'].forEach(id=>$(id).classList.toggle('hidden',id!==v));
+  $('bar').classList.toggle('hidden',v!=='vEdit');window.scrollTo(0,0);
+}
+function render(){
+  $('tabs').innerHTML=LIST.map((sh,i)=>'<button class="tab'+(i===tab?' on':'')+'" data-t="'+i+'">'+esc(sh.title.split(' ')[0])+'</button>').join('');
+  const q=$('q').value.trim().toLowerCase();let h='';
+  LIST.forEach((sh,si)=>sh.categories.forEach((c,ci)=>{
+    const rows=c.items.map((it,ii)=>({it,ii})).filter(({it})=>q?it.name.toLowerCase().includes(q):si===tab);
+    if(!rows.length)return;
+    h+='<div class="cat">'+esc(c.name)+'</div>';
+    rows.forEach(({it,ii})=>{
+      const p=split(it.name),o=orig[si].categories[ci].items[ii].expected||'';
+      h+='<div class="row'+((it.expected||'')!==o?' chg':'')+'"><div class="i"><div class="nm">'+esc(p[0])+'</div>'+(p[1]?'<div class="zh">'+esc(p[1])+'</div>':'')+
+        '<div class="src">'+esc(it.source||'')+((it.expected||'')!==o?' · 原本 '+esc(o||'（空）'):'')+'</div></div>'+
+        '<input data-k="'+si+'.'+ci+'.'+ii+'" value="'+esc(it.expected||'')+'" placeholder="—" aria-label="預期數量"></div>';
+    });
+  }));
+  $('list').innerHTML=h||'<p class="muted">沒有符合的貨品</p>';
+  counts();
+}
+function changes(){let n=0;LIST.forEach((sh,si)=>sh.categories.forEach((c,ci)=>c.items.forEach((it,ii)=>{if((it.expected||'')!==(orig[si].categories[ci].items[ii].expected||''))n++})));return n}
+function counts(){const n=changes();$('chgCount').textContent=n?'已修改 '+n+' 項':'未有修改';$('saveBtn').disabled=!n}
+
+$('tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;tab=+b.dataset.t;render()};
+$('q').oninput=render;
+$('list').addEventListener('input',e=>{
+  const k=e.target.dataset.k;if(!k)return;const [si,ci,ii]=k.split('.').map(Number);
+  LIST[si].categories[ci].items[ii].expected=e.target.value.trim();
+  const row=e.target.closest('.row'),o=orig[si].categories[ci].items[ii].expected||'';
+  row.classList.toggle('chg',e.target.value.trim()!==o);counts();
+});
+window.addEventListener('beforeunload',e=>{if(LIST&&orig&&changes()&&!$('vEdit').classList.contains('hidden')){e.preventDefault();e.returnValue=''}});
+
+$('saveBtn').onclick=async()=>{
+  const bad=[];LIST.forEach(sh=>sh.categories.forEach(c=>c.items.forEach(it=>{if(it.expected&&it.expected!=='—'&&!/^\s*\d/.test(it.expected))bad.push(it.name)})));
+  if(bad.length&&!confirm('以下項目的預期不是以數字開頭，系統不會用來判斷低於預期：\n'+bad.slice(0,5).join('\n')+'\n\n仍然儲存？'))return;
+  const json=JSON.stringify(LIST,null,1);
+  if(gh.local){
+    $('out').value='// 盤點清單。修改預期數量：用 stockcount/admin.html。\nwindow.STOCK_LIST = '+json+';\n';
+    $('ghLink').href='https://github.com/imager852/Beastfeast/edit/main/stockcount/items.js';
+    $('savedMsg').innerHTML='<b>已準備好新清單</b><div class="muted">共修改 '+changes()+' 項。還要完成下面一步才會生效。</div>';
+    $('manual').classList.remove('hidden');orig=JSON.parse(json);show('vSaved');return;
+  }
+  $('saveBtn').disabled=true;$('chgCount').textContent='儲存中…';
+  try{
+    const n=changes();
+    const r=await fetch(url('items.json'),{method:'PUT',headers:hdr(),body:JSON.stringify({message:'Update expected stock ('+n+' items)',branch:gh.branch,sha,content:b64(enc.encode(json))})});
+    if(r.status===409||r.status===422)throw new Error('清單剛被其他人修改，請重新載入頁面再改');
+    if(!r.ok)throw new Error('GitHub '+r.status);
+    sha=(await r.json()).content.sha;orig=JSON.parse(json);
+    $('savedMsg').innerHTML='<b class="ok">已儲存 ✓</b><div class="muted">修改了 '+n+' 項。員工下次登入或刷新網頁就會看到新的預期數量。</div>';
+    $('manual').classList.add('hidden');show('vSaved');
+  }catch(err){counts();alert('儲存失敗：'+err.message)}
+};
+$('copyBtn').onclick=()=>{$('out').select();navigator.clipboard.writeText($('out').value).then(()=>{$('copyBtn').textContent='已複製 ✓'},()=>{document.execCommand('copy');$('copyBtn').textContent='已複製 ✓'})};
+$('againBtn').onclick=()=>{show('vEdit');render()};
+
+async function start(){
+  $('loginMsg').textContent='載入中…';
+  try{await load();orig=JSON.parse(JSON.stringify(LIST));$('loginMsg').textContent='';show('vEdit');render()}
+  catch(err){$('loginMsg').textContent='載入失敗：'+err.message;show('vLogin')}
+}
+$('loginBtn').onclick=async()=>{
+  const code=$('code').value;if(!code)return;
+  $('loginBtn').disabled=true;$('loginMsg').textContent='驗證中…';
+  try{gh=await unlock(code)}catch(e){gh=null}
+  $('loginBtn').disabled=false;
+  if(!gh){$('loginMsg').textContent='密碼錯誤';return}
+  start();
+};
+$('code').onkeydown=e=>{if(e.key==='Enter')$('loginBtn').click()};
+// reuse the stock-count login on this phone
+try{const s=JSON.parse(sessionStorage.getItem(SKEY)||localStorage.getItem(SKEY));if(s&&!!s.local===LOCAL){gh=s;start()}}catch(e){}
+})();
+</script>
+</body>
+</html>
