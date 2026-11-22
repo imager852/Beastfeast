@@ -58,3 +58,16 @@ Then swap `width`/`height` for a `viewBox` + `shape-rendering="crispEdges"`.
 
 - HungryPanda: only has a WeChat mini-program link, so the button goes
   to hungrypanda.co, not the store page.
+
+## Stock count 盤點 (`/stockcount/`)
+
+Mobile page for staff stock counts: https://www.beastfeast.uk/stockcount/
+(`noindex`, not linked from the main page).
+
+- Staff enter their name, count each item (−/+ or type), progress autosaves
+  in the phone's localStorage.
+- "完成" shows unfilled / below-expected items, then generates an A4 PDF in
+  the browser (html2pdf.js 0.10.1, vendored) to share via WhatsApp/Email or download.
+- Item list: `stockcount/items.js` (generated from `BF_Stock_System` xlsx).
+  Edit that file to add/remove items or change expected stock. An item is
+  flagged "低於預期" when the count is below the number in `expected`.
