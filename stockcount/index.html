@@ -464,7 +464,9 @@ function buildPdfHtml(){
     low.map(x=>'<tr class="lo"><td>'+namePdf(x.name)+'</td><td class="s">'+esc(x.source)+'</td><td class="n">'+esc(x.expected)+'</td><td class="n p">'+esc(lastFmt(x))+'</td><td class="n cur">'+esc(fmt(x))+'</td></tr>').join('')+'</table>';
   const secs=[];
   LIST.forEach((sh,si)=>{
-    secs.push(h);h=''; // summary page, then one section per sheet
+    // summary shares the first sheet's page unless the below-expected list is long
+    // (keeps each rendered canvas within phone size limits); later sheets start a new page
+    if(si>0||low.length>15){secs.push(h);h=''}
     h+='<h3>'+esc(sh.title)+'</h3><table><tr><th>Item</th><th>Source</th><th>Expected 預期</th><th>Last 上次'+(last()?'<br>'+esc(lastLabel()):'')+'</th><th>Current 現有</th></tr>';
     let cur=null;
     items.filter(x=>x.sheet===si).forEach(x=>{
