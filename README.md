@@ -64,13 +64,18 @@ Then swap `width`/`height` for a `viewBox` + `shape-rendering="crispEdges"`.
 Mobile page for staff stock counts: https://www.beastfeast.uk/stockcount/
 (`noindex`, not linked from the main page).
 
-- Staff enter their name, count each item (−/+ or type), progress autosaves
-  in the phone's localStorage.
-- "完成" shows unfilled / below-expected items, then generates an A4 PDF in
-  the browser (html2pdf.js 0.10.1, vendored) to share via WhatsApp/Email or download.
-- Item list: `stockcount/items.js` (generated from `BF_Stock_System` xlsx).
-  Edit that file to add/remove items or change expected stock. An item is
-  flagged "低於預期" when the count is below the number in `expected`.
-- Each item shows the previous count ("上次", tap to copy). History (last 20
-  counts) is saved in the phone's localStorage when the PDF is generated, so
-  it only shows counts made on the same phone/browser. The PDF has a "Last" column.
+- **Login**: staff enter an access code. `stockcount/config.js` holds a GitHub
+  token encrypted with that code (PBKDF2 600k + AES-GCM); a wrong code cannot
+  decrypt it. Generate `config.js` with `stockcount/setup.html`.
+- **Data lives in a private repo** (default `imager852/beastfeast-stock`), never
+  in this public repo:
+  - `items.json` — item list (edit to add/remove items or change expected stock)
+  - `records/<date>_<time>_<staff>_<id>.json` — each count
+  - `reports/….pdf` — each PDF
+  - `history/latest.json` — last two counts, used for the "上次" column
+- Staff count each item (−/+, type, or tap "上次" to copy last count); progress
+  autosaves on the phone. "完成" → review → A4 PDF (html2pdf.js 0.10.1, vendored),
+  saved to the private repo and shareable via WhatsApp/Email.
+- Token: fine-grained PAT, only the private repo, Contents read/write. Anyone
+  with the access code could extract it, so keep the code private and rotate
+  the token (re-run setup) when staff leave.
