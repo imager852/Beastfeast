@@ -68,6 +68,9 @@ Mobile page for staff stock counts: https://www.beastfeast.uk/stockcount/
   in the page — not real security), item list from the public `stockcount/items.js`,
   "上次" history kept on each phone. Adding `config.js` switches to GitHub mode
   automatically; then delete `items.js`.
+- **Expected stock editor**: `stockcount/admin.html` (same code). GitHub mode saves
+  `items.json` in the data repo; temporary mode produces a new `items.js` to paste
+  into this repo.
 - **Login**: staff enter an access code. `stockcount/config.js` holds a GitHub
   token encrypted with that code (PBKDF2 600k + AES-GCM); a wrong code cannot
   decrypt it. Generate `config.js` with `stockcount/setup.html`.
