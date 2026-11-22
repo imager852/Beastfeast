@@ -58,6 +58,7 @@ textarea{min-height:90px;resize:vertical}
 
 /* items */
 .cat{margin:16px 0 6px;font-size:14px;font-weight:700;color:var(--soy-muted);display:flex;justify-content:space-between}
+.item.gone{opacity:0;transform:translateX(30px);transition:opacity .25s,transform .25s}
 .item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 10px 10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
 .item.done{border-color:rgba(79,125,50,.45);background:#fbfdf9}
 .item.low{border-color:rgba(199,58,38,.55);background:#fffafa}
@@ -434,19 +435,19 @@ function refreshRow(row,it){
 $('list').addEventListener('click',e=>{
   const c=e.target.closest('button[data-copy]');
   if(c){const row=c.closest('.item'),it=byId(row.dataset.id);row.querySelector('input').value=c.dataset.copy;
-    st.counts[it.id]=c.dataset.copy;save();refreshRow(row,it);return}
+    st.counts[it.id]=c.dataset.copy;save();refreshRow(row,it);if(row.contains(document.activeElement))document.activeElement.blur();hideSoon(row);return}
   const b=e.target.closest('button[data-d]');if(!b)return;
   const row=b.closest('.item'),it=byId(row.dataset.id),inp=row.querySelector('input');
   let v=parseFloat(inp.value);if(isNaN(v))v=0;else v=Math.max(0,v+ +b.dataset.d);
   if(!filled(it)&&b.dataset.d==='-1')v=0;
-  inp.value=+v.toFixed(2);st.counts[it.id]=inp.value;save();refreshRow(row,it);
+  inp.value=+v.toFixed(2);st.counts[it.id]=inp.value;save();refreshRow(row,it);if(row.contains(document.activeElement))document.activeElement.blur();hideSoon(row);
 });
 $('list').addEventListener('input',e=>{
   if(e.target.tagName!=='INPUT')return;
   const row=e.target.closest('.item'),it=byId(row.dataset.id);
   const v=e.target.value.replace(',','.').trim();
   if(v==='')delete st.counts[it.id];else st.counts[it.id]=v;
-  save();refreshRow(row,it);
+  save();refreshRow(row,it);hideSoon(row);
   // auto-advance: after a short pause in typing, jump to the next item's field
   clearTimeout(advTimer);
   if(v!==''&&!/[.\/]$/.test(v)){const inp=e.target;advTimer=setTimeout(()=>{if(document.activeElement===inp)focusNext(inp)},ADV_MS)}
@@ -461,7 +462,24 @@ $('list').addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'&&e.key==='Enter'){e.preventDefault();clearTimeout(advTimer);focusNext(e.target)}
 });
 $('list').addEventListener('focusin',e=>{if(e.target.tagName==='INPUT')e.target.select()});
-$('list').addEventListener('focusout',()=>clearTimeout(advTimer));
+$('list').addEventListener('focusout',e=>{clearTimeout(advTimer);const row=e.target.closest&&e.target.closest('.item');if(row)hideSoon(row)});
+// "未填" filter: a row that has been counted slides away shortly after the staff move on
+const HIDE_MS=800;
+function hideSoon(row){
+  if(filter!=='todo')return;
+  clearTimeout(row._hide);
+  row._hide=setTimeout(()=>{
+    const it=byId(row.dataset.id);
+    if(!row.isConnected||!filled(it)||row.contains(document.activeElement))return; // still typing: retried on focusout
+    row.classList.add('gone');
+    setTimeout(()=>{
+      if(!filled(it)){row.classList.remove('gone');return}
+      const prev=row.previousElementSibling,next=row.nextElementSibling;row.remove();
+      if(prev&&prev.classList.contains('cat')&&(!next||next.classList.contains('cat')))prev.remove(); // empty category
+      if(!$('list').querySelector('.item'))$('list').innerHTML='<div class="empty">全部已填 ✓</div>';
+    },250);
+  },HIDE_MS);
+}
 
 function updateProg(){
   const d=items.filter(filled).length;
