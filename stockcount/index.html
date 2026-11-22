@@ -104,6 +104,9 @@ textarea{min-height:90px;resize:vertical}
 
 /* PDF sheet (rendered offscreen) */
 #pdfWrap{position:fixed;left:-10000px;top:0}
+.pdfp.page{height:1120px;overflow:hidden;position:relative}
+.pdfp .pf{position:absolute;left:34px;right:34px;bottom:18px;text-align:right;font-size:12px;color:#8a7767}
+.pdfp .sect{font-size:20px;font-weight:700;margin:20px 0 4px;padding-bottom:4px;border-bottom:2px solid #2b1a10}
 .pdfp{width:794px;padding:30px 34px;background:#fff;color:#1d120b;font-family:var(--body);font-size:15px;line-height:1.3}
 .pdfp .ph{display:flex;align-items:center;gap:12px;border-bottom:2px solid #2b1a10;padding-bottom:10px;margin-bottom:12px}
 .pdfp .ph img{width:56px;height:56px;border-radius:50%}
@@ -481,43 +484,81 @@ $('notes').oninput=()=>{st.notes=$('notes').value;save()};
 
 // ---------- PDF ----------
 let pdfBlob=null,pdfName='';
-function buildPdfHtml(){
+// Lays the report out into fixed A4-sized page divs (794x1123px) so rows never split,
+// there is no blank space between sections, and each page renders as its own small canvas.
+const PAGE_W=794,PAGE_H=1120; // just under A4 at 96dpi (1122.5px) so each div is exactly one page
+function buildPdfPages(wrap){
+  wrap.replaceChildren();
   const todo=items.filter(x=>!filled(x)).length,low=items.filter(isLow);
-  let h='<div class="ph"><img src="../assets/logo.webp"><div><h2>Stock Count 盤點報告</h2><div>Beast Feast 饗獸食堂</div></div>'+
+  const pages=[];let page,body,table=null,tableHead='';
+  function newPage(){
+    page=document.createElement('div');page.className='pdfp page';
+    body=document.createElement('div');page.append(body);
+    const ft=document.createElement('div');ft.className='pf';page.append(ft);
+    wrap.append(page);pages.push(page);table=null;
+  }
+  const full=()=>body.offsetHeight>PAGE_H-60-34; // page padding + footer space
+  function el(html){const t=document.createElement('template');t.innerHTML=html.trim();return t.content.firstElementChild}
+  // keepSpace: start a new page if less than this many px remain (keeps headings with their rows)
+  function block(html,keepSpace){
+    if(keepSpace&&body.offsetHeight>PAGE_H-60-34-keepSpace&&body.children.length)newPage();
+    const e=el(html);body.append(e);
+    if(full()&&body.children.length>1){e.remove();newPage();body.append(e)}
+  }
+  function startTable(head){tableHead=head;table=null}
+  function row(html){
+    if(!table){table=el('<table><thead>'+tableHead+'</thead><tbody></tbody></table>');body.append(table)}
+    const tb=table.tBodies[0],r=el('<table><tbody>'+html+'</tbody></table>').querySelector('tr');tb.append(r);
+    if(full()){
+      r.remove();
+      const prev=tb.lastElementChild,carry=prev&&prev.classList.contains('c')?prev:null; // don't strand a category title
+      if(carry)carry.remove();
+      if(!tb.children.length)table.remove();
+      newPage();table=null;
+      if(carry)row(carry.outerHTML);
+      row(html);
+    }
+  }
+  const rowHtml=(x,cls)=>'<tr class="'+cls+'"><td>'+namePdf(x.name)+'</td><td class="s">'+esc(x.source)+'</td><td class="n">'+esc(x.expected||'')+'</td><td class="n p">'+esc(lastFmt(x))+'</td><td class="n cur">'+esc(fmt(x))+'</td></tr>';
+  const head=(e,l,c)=>'<tr><th>Item</th><th>Source</th><th>'+e+'</th><th>'+l+'</th><th>'+c+'</th></tr>';
+
+  newPage();
+  block('<div><div class="ph"><img src="../assets/logo.webp"><div><h2>Stock Count 盤點報告</h2><div>Beast Feast 饗獸食堂</div></div>'+
     '<div class="r">生成時間<br>'+new Date().toLocaleString('zh-HK')+'</div></div>'+
     '<div class="kv"><div><span>員工 Staff</span><b>'+esc(st.staff)+'</b></div><div><span>盤點日期</span><b>'+esc(st.date)+' '+esc(st.time)+'</b></div>'+
-    '<div><span>已填 / 總數</span><b>'+(items.length-todo)+' / '+items.length+'</b></div><div><span>低於預期</span><b style="color:#c73a26">'+low.length+'</b></div></div>';
-  if(low.length) h+='<h3>⚠ 需補貨 Below expected</h3><table><tr><th>Item</th><th>Source</th><th>預期</th><th>上次</th><th>現有</th></tr>'+
-    low.map(x=>'<tr class="lo"><td>'+namePdf(x.name)+'</td><td class="s">'+esc(x.source)+'</td><td class="n">'+esc(x.expected)+'</td><td class="n p">'+esc(lastFmt(x))+'</td><td class="n cur">'+esc(fmt(x))+'</td></tr>').join('')+'</table>';
-  const secs=[];
+    '<div><span>已填 / 總數</span><b>'+(items.length-todo)+' / '+items.length+'</b></div><div><span>低於預期</span><b style="color:#c73a26">'+low.length+'</b></div></div></div>');
+  if(low.length){
+    block('<h3>⚠ 需補貨 Below expected</h3>',150);
+    startTable(head('預期','上次','現有'));low.forEach(x=>row(rowHtml(x,'lo')));
+  }
+  block('<div class="sect">盤點明細 Count details</div>',200);
   LIST.forEach((sh,si)=>{
-    // summary shares the first sheet's page unless the below-expected list is long
-    // (keeps each rendered canvas within phone size limits); later sheets start a new page
-    if(si>0||low.length>15){secs.push(h);h=''}
-    h+='<h3>'+esc(sh.title)+'</h3><table><tr><th>Item</th><th>Source</th><th>Expected 預期</th><th>Last 上次'+(last()?'<br>'+esc(lastLabel()):'')+'</th><th>Current 現有</th></tr>';
+    if(si>0)newPage(); // products start on a new page
+    block('<h3>'+esc(sh.title)+'</h3>',150);
+    startTable(head('Expected 預期','Last 上次'+(last()?'<br>'+esc(lastLabel()):''),'Current 現有'));
     let cur=null;
     items.filter(x=>x.sheet===si).forEach(x=>{
-      if(x.cat!==cur){cur=x.cat;h+='<tr class="c"><td colspan="5">'+esc(cur)+'</td></tr>'}
-      h+='<tr class="'+(isLow(x)?'lo':filled(x)?'':'na')+'"><td>'+namePdf(x.name)+'</td><td class="s">'+esc(x.source)+'</td><td class="n">'+esc(x.expected||'')+'</td><td class="n p">'+esc(lastFmt(x))+'</td><td class="n cur">'+esc(fmt(x))+'</td></tr>';
+      if(x.cat!==cur){cur=x.cat;row('<tr class="c"><td colspan="5">'+esc(cur)+'</td></tr>')}
+      row(rowHtml(x,isLow(x)?'lo':filled(x)?'':'na'));
     });
-    h+='</table>';
   });
-  h+='<h3>備註 Notes</h3><div class="note">'+esc(st.notes||'—')+'</div>'+
-    '<div class="sig"><div>盤點員工：'+esc(st.staff)+'</div><div>核對 Checked by：</div></div>';
-  secs.push(h);return secs; // each section starts a new page (keeps canvas size within phone limits)
+  block('<h3>備註 Notes</h3>',120);
+  block('<div class="note">'+esc(st.notes||'—')+'</div>');
+  block('<div class="sig"><div>盤點員工：'+esc(st.staff)+'</div><div>核對 Checked by：</div></div>');
+  pages.forEach((p,i)=>p.querySelector('.pf').textContent=st.date+' · '+st.staff+'　　第 '+(i+1)+' / '+pages.length+' 頁');
+  return pages;
 }
 $('pdfBtn').onclick=async()=>{
   if(!window.html2pdf){toast('PDF 工具未載入，請檢查網絡後重試');return}
   const btn=$('pdfBtn');btn.disabled=true;btn.textContent='生成中…';
   try{
-    const els=buildPdfHtml().map(h=>{const d=document.createElement('div');d.className='pdfp';d.innerHTML=h;return d});
-    $('pdfWrap').replaceChildren(...els);
+    const els=buildPdfPages($('pdfWrap'));
     pdfName='StockCount_BeastFeast_'+st.date+'_'+st.staff.replace(/[^\w一-鿿-]/g,'')+'.pdf';
     const opt={
-      margin:[6,0,8,0],filename:pdfName,image:{type:'jpeg',quality:0.92},
-      html2canvas:{scale:1.8,useCORS:true,backgroundColor:'#fff',scrollX:0,scrollY:0},
+      margin:0,filename:pdfName,image:{type:'jpeg',quality:0.92},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:'#fff',scrollX:0,scrollY:0},
       jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-      pagebreak:{mode:['css','legacy'],avoid:['tr','.kv','h3']}
+      pagebreak:{mode:[]}
     };
     let w=html2pdf().set(opt).from(els[0]).toPdf();
     for(let i=1;i<els.length;i++) w=w.get('pdf').then(pdf=>{pdf.addPage()}).from(els[i]).toContainer().toCanvas().toPdf();
