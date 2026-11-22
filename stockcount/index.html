@@ -335,8 +335,20 @@ function load(){try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return
 function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
 function filled(it){const v=st.counts[it.id];return v!==undefined&&v!==''}
 // below expected; items without an expected number count as low only when 0
-// below-expected items grouped by supplier (blank source last), list order kept within each
-function lowBySource(){return items.filter(isLow).map((x,i)=>[x,i]).sort((a,b)=>{const sa=a[0].source||'\uffff',sb=b[0].source||'\uffff';return sa<sb?-1:sa>sb?1:a[1]-b[1]}).map(p=>p[0])}
+// Supplier group for the below-expected list. Costco, Booker and Costco/Booker are one
+// group, ordered Costco -> Booker -> Costco/Booker; every other source is its own group.
+const MERGED={'costco':0,'booker':1,'costco/booker':2};
+function srcGroup(src){
+  const k=(src||'').toLowerCase().replace(/\s*\/\s*/g,'/').trim();
+  return k in MERGED?{name:'Costco/Booker',rank:MERGED[k]}:{name:src||'',rank:0};
+}
+// below-expected items sorted by supplier group (blank source last), list order kept within each
+function lowBySource(){
+  return items.filter(isLow).map((x,i)=>({x,i,g:srcGroup(x.source)})).sort((a,b)=>{
+    const ga=a.g.name||'\uffff',gb=b.g.name||'\uffff';
+    return ga<gb?-1:ga>gb?1:a.g.rank-b.g.rank||a.i-b.i;
+  }).map(o=>o.x);
+}
 function isLow(it){if(!filled(it))return false;const v=parseFloat(st.counts[it.id]);if(isNaN(v))return false;return it.exp===null?v<=0:v<it.exp}
 function fmt(it){return filled(it)?st.counts[it.id]+(it.unit?' '+it.unit:''):'—'}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
@@ -532,7 +544,7 @@ function buildPdfPages(wrap){
   if(low.length){
     block('<h3>⚠ 需補貨 Below expected</h3>',150);
     startTable(head('預期','上次','現有'));let src=null;
-    low.forEach(x=>{const k=x.source||'其他 Other';if(k!==src){src=k;row('<tr class="c"><td colspan="5">'+esc(k)+'</td></tr>')}row(rowHtml(x,'lo'))});
+    low.forEach(x=>{const k=srcGroup(x.source).name||'其他 Other';if(k!==src){src=k;row('<tr class="c"><td colspan="5">'+esc(k)+'</td></tr>')}row(rowHtml(x,'lo'))});
   }
   block('<div class="sect">盤點明細 Count details</div>',200);
   LIST.forEach((sh,si)=>{
