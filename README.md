@@ -71,3 +71,6 @@ Mobile page for staff stock counts: https://www.beastfeast.uk/stockcount/
 - Item list: `stockcount/items.js` (generated from `BF_Stock_System` xlsx).
   Edit that file to add/remove items or change expected stock. An item is
   flagged "低於預期" when the count is below the number in `expected`.
+- Each item shows the previous count ("上次", tap to copy). History (last 20
+  counts) is saved in the phone's localStorage when the PDF is generated, so
+  it only shows counts made on the same phone/browser. The PDF has a "Last" column.

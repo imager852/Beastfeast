@@ -66,6 +66,7 @@ textarea{min-height:90px;resize:vertical}
 .meta{font-size:12px;color:var(--soy-muted);margin-top:2px}
 .badge{display:inline-block;font-size:11px;font-weight:600;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:1px}
 .badge[hidden]{display:none}
+.prev{display:inline-block;margin-top:4px;border:1px dashed var(--gold);background:var(--gold-soft);color:var(--soy);border-radius:6px;padding:1px 7px;font-size:12px}
 .badge.low{background:var(--chili-soft);color:var(--chili)}
 .qty{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .qty button{width:38px;height:42px;border:1px solid var(--line);background:var(--paper);border-radius:10px;font-size:20px;line-height:1}
@@ -109,6 +110,7 @@ textarea{min-height:90px;resize:vertical}
 #pdf th,#pdf td{border:1px solid #d9d0c6;padding:3px 6px;text-align:left}
 #pdf th{background:#f4e8d6;font-size:10px}
 #pdf td.n{text-align:center;width:70px}
+#pdf td.p{color:#6e5747}
 #pdf td.s{width:90px;color:#6e5747}
 #pdf tr.c td{background:#faf5ee;font-weight:700}
 #pdf tr.lo td{background:#fde3df}
@@ -139,6 +141,7 @@ textarea{min-height:90px;resize:vertical}
     <div style="height:14px"></div>
     <button class="btn" id="startBtn">開始盤點</button>
     <p class="muted" id="resumeHint" style="margin:10px 0 0"></p>
+    <p class="muted" id="lastHint" style="margin:6px 0 0"></p>
   </div>
   <p class="muted">輸入會自動儲存在這部手機，中途關閉網頁也不會遺失。</p>
 </main>
@@ -172,6 +175,7 @@ textarea{min-height:90px;resize:vertical}
     <p class="muted" id="fileName" style="margin:4px 0 12px"></p>
     <button class="btn dark" id="shareBtn">分享（WhatsApp / Email）</button>
     <button class="btn ghost" id="dlBtn">下載 PDF</button>
+    <button class="btn ghost" id="newBtn">開始新一次盤點</button>
   </div>
 </main>
 
@@ -186,7 +190,7 @@ textarea{min-height:90px;resize:vertical}
 <script src="html2pdf.bundle.min.js"></script>
 <script>
 (function(){
-const KEY='bf-stockcount-v1';
+const KEY='bf-stockcount-v1',HKEY='bf-stockcount-history';
 const LIST=window.STOCK_LIST;
 const $=id=>document.getElementById(id);
 
@@ -203,6 +207,21 @@ function numOf(e){
 
 let st=load()||{};
 st.counts=st.counts||{};
+if(st.started&&!st.sid){st.sid=newSid();save()}
+let history=[];try{history=JSON.parse(localStorage.getItem(HKEY))||[]}catch(e){}
+// previous completed count (not the one in progress)
+function last(){return history.find(h=>h.sid!==st.sid)||null}
+function lastVal(it){const l=last();if(!l)return null;const v=l.counts[it.name];return v===undefined||v===''?null:v}
+function lastFmt(it){const v=lastVal(it);return v===null?'—':v+(it.unit?' '+it.unit:'')}
+function lastLabel(){const l=last();return l?l.date.slice(5)+' '+l.staff:''}
+function saveHistory(){
+  const counts={};items.forEach(it=>{if(filled(it))counts[it.name]=st.counts[it.id]});
+  history=history.filter(h=>h.sid!==st.sid);
+  history.unshift({sid:st.sid,date:st.date,time:st.time,staff:st.staff,at:new Date().toISOString(),counts});
+  history=history.slice(0,20);
+  try{localStorage.setItem(HKEY,JSON.stringify(history))}catch(e){}
+}
+function newSid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 let tab=0, filter='all';
 
 function load(){try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null}}
@@ -220,18 +239,21 @@ $('date').value=st.date||now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now
 $('time').value=st.time||pad(now.getHours())+':'+pad(now.getMinutes());
 $('staff').value=st.staff||'';
 const nFilled=items.filter(filled).length;
+if(last()) $('lastHint').textContent='上次盤點：'+last().date+' '+last().time+'（'+last().staff+'）';
 if(nFilled) $('resumeHint').textContent='有未完成的盤點（已填 '+nFilled+' 項），按「開始盤點」繼續。';
 
 $('startBtn').onclick=()=>{
   const s=$('staff').value.trim();
   if(!s){$('staff').focus();toast('請輸入員工姓名');return}
-  st.staff=s;st.date=$('date').value;st.time=$('time').value;st.started=true;save();
+  st.staff=s;st.date=$('date').value;st.time=$('time').value;st.started=true;if(!st.sid)st.sid=newSid();save();
   show('count');
 };
 $('resetBtn').onclick=()=>{
   if(!confirm('清除所有已輸入的數量，重新開始？'))return;
-  const staff=st.staff;st={counts:{},staff};save();location.reload();
+  newCount();
 };
+function newCount(){const staff=st.staff;st={counts:{},staff};save();location.reload()}
+$('newBtn').onclick=()=>{if(confirm('開始新一次盤點？這次的記錄已保存，下次會顯示為「上次」。'))newCount()};
 
 function show(v){
   $('vStart').classList.toggle('hidden',v!=='start');
@@ -271,7 +293,8 @@ function renderList(){
     count++;
     html+='<div class="item'+cls(it)+'" data-id="'+it.id+'"><div class="info"><div class="nm">'+esc(it.name)+'</div>'+
       '<div class="meta">'+[it.source,it.expected&&it.expected!=='—'?'預期 '+esc(it.expected):''].filter(Boolean).join(' · ')+
-      '<span class="badge low"'+(isLow(it)?'':' hidden')+'>低</span></div></div>'+
+      '<span class="badge low"'+(isLow(it)?'':' hidden')+'>低</span></div>'+
+      (lastVal(it)!==null?'<button class="prev" data-copy="'+esc(lastVal(it))+'" title="按一下填入相同數量">上次 '+esc(lastFmt(it))+'</button>':'')+'</div>'+
       '<div class="qty"><button data-d="-1" aria-label="減">−</button>'+
       '<input inputmode="decimal" value="'+esc(st.counts[it.id]??'')+'" placeholder="—" aria-label="現有數量">'+
       '<button data-d="1" aria-label="加">+</button><span class="unit">'+esc(it.unit)+'</span></div></div>';
@@ -286,6 +309,9 @@ function refreshRow(row,it){
   updateProg();renderTabs();
 }
 $('list').addEventListener('click',e=>{
+  const c=e.target.closest('button[data-copy]');
+  if(c){const row=c.closest('.item'),it=byId(row.dataset.id);row.querySelector('input').value=c.dataset.copy;
+    st.counts[it.id]=c.dataset.copy;save();refreshRow(row,it);return}
   const b=e.target.closest('button[data-d]');if(!b)return;
   const row=b.closest('.item'),it=byId(row.dataset.id),inp=row.querySelector('input');
   let v=parseFloat(inp.value);if(isNaN(v))v=0;else v=Math.max(0,v+ +b.dataset.d);
@@ -333,14 +359,14 @@ function buildPdfHtml(){
     '<div class="r">生成時間<br>'+new Date().toLocaleString('zh-HK')+'</div></div>'+
     '<div class="kv"><div><span>員工 Staff</span><b>'+esc(st.staff)+'</b></div><div><span>盤點日期</span><b>'+esc(st.date)+' '+esc(st.time)+'</b></div>'+
     '<div><span>已填 / 總數</span><b>'+(items.length-todo)+' / '+items.length+'</b></div><div><span>低於預期</span><b style="color:#c73a26">'+low.length+'</b></div></div>';
-  if(low.length) h+='<h3>⚠ 需補貨 Below expected</h3><table><tr><th>Item</th><th>Source</th><th>預期</th><th>現有</th></tr>'+
-    low.map(x=>'<tr class="lo"><td>'+esc(x.name)+'</td><td class="s">'+esc(x.source)+'</td><td class="n">'+esc(x.expected)+'</td><td class="n cur">'+esc(fmt(x))+'</td></tr>').join('')+'</table>';
+  if(low.length) h+='<h3>⚠ 需補貨 Below expected</h3><table><tr><th>Item</th><th>Source</th><th>預期</th><th>上次</th><th>現有</th></tr>'+
+    low.map(x=>'<tr class="lo"><td>'+esc(x.name)+'</td><td class="s">'+esc(x.source)+'</td><td class="n">'+esc(x.expected)+'</td><td class="n p">'+esc(lastFmt(x))+'</td><td class="n cur">'+esc(fmt(x))+'</td></tr>').join('')+'</table>';
   LIST.forEach((sh,si)=>{
-    h+='<h3>'+esc(sh.title)+'</h3><table><tr><th>Item</th><th>Source</th><th>Expected 預期</th><th>Current 現有</th></tr>';
+    h+='<h3>'+esc(sh.title)+'</h3><table><tr><th>Item</th><th>Source</th><th>Expected 預期</th><th>Last 上次'+(last()?'<br>'+esc(lastLabel()):'')+'</th><th>Current 現有</th></tr>';
     let cur=null;
     items.filter(x=>x.sheet===si).forEach(x=>{
-      if(x.cat!==cur){cur=x.cat;h+='<tr class="c"><td colspan="4">'+esc(cur)+'</td></tr>'}
-      h+='<tr class="'+(isLow(x)?'lo':filled(x)?'':'na')+'"><td>'+esc(x.name)+'</td><td class="s">'+esc(x.source)+'</td><td class="n">'+esc(x.expected||'')+'</td><td class="n cur">'+esc(fmt(x))+'</td></tr>';
+      if(x.cat!==cur){cur=x.cat;h+='<tr class="c"><td colspan="5">'+esc(cur)+'</td></tr>'}
+      h+='<tr class="'+(isLow(x)?'lo':filled(x)?'':'na')+'"><td>'+esc(x.name)+'</td><td class="s">'+esc(x.source)+'</td><td class="n">'+esc(x.expected||'')+'</td><td class="n p">'+esc(lastFmt(x))+'</td><td class="n cur">'+esc(fmt(x))+'</td></tr>';
     });
     h+='</table>';
   });
@@ -360,7 +386,7 @@ $('pdfBtn').onclick=async()=>{
       jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
       pagebreak:{mode:['css','legacy'],avoid:['tr','.kv','h3']}
     }).from(el).outputPdf('blob');
-    st.submittedAt=new Date().toISOString();save();
+    st.submittedAt=new Date().toISOString();save();saveHistory();
     $('fileName').textContent=pdfName;
     $('doneCard').classList.remove('hidden');
     $('doneCard').scrollIntoView({behavior:'smooth'});
