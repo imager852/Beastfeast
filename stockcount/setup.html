@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>BF 盤點設定</title>
+<style>
+:root{--rice:#fbf6ee;--soy:#2b1a10;--muted:#6e5747;--chili:#c73a26;--line:rgba(43,26,16,.13);--ok:#4f7d32}
+*{box-sizing:border-box}
+body{margin:0;background:var(--rice);color:var(--soy);font-family:"Inter","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;line-height:1.45}
+main{max-width:640px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:20px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+input,textarea{width:100%;font:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}
+textarea{font-family:ui-monospace,Menlo,monospace;font-size:12px;min-height:150px}
+button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:12px 16px;background:var(--chili);color:#fff;margin-top:14px;width:100%}
+.muted{color:var(--muted);font-size:13px}
+.err{color:var(--chili)}.ok{color:var(--ok)}
+ol{padding-left:20px;font-size:14px}
+code{background:#f4e8d6;padding:1px 4px;border-radius:4px}
+</style>
+</head>
+<body>
+<main>
+<h1>盤點系統設定（管理員）</h1>
+<div class="card">
+  <ol>
+    <li>在 GitHub 建立一個<b>私人 (Private)</b> 倉庫，例如 <code>beastfeast-stock</code>，放入 <code>items.json</code>（貨品清單）。</li>
+    <li>建立 Fine-grained token：GitHub → Settings → Developer settings → Personal access tokens → Fine-grained → 只選該私人倉庫 → Repository permissions → <b>Contents: Read and write</b>。</li>
+    <li>在下面填入 token 和員工登入密碼，按「生成設定」。</li>
+    <li>把生成的內容存成 <code>stockcount/config.js</code>（Beastfeast 倉庫）。</li>
+  </ol>
+  <p class="muted">Token 只會在這個瀏覽器內用登入密碼加密，不會傳送到其他地方。所有員工共用同一個密碼。密碼越長越安全：4 位數字（例如 1234）只能擋住一般人，建議用 8 個字元以上、混合英文和數字。</p>
+</div>
+<div class="card">
+  <label for="token">GitHub token</label>
+  <input id="token" type="password" autocomplete="off" placeholder="github_pat_…">
+  <label for="repo">私人倉庫 (owner/name)</label>
+  <input id="repo" value="imager852/beastfeast-stock">
+  <label for="branch">Branch</label>
+  <input id="branch" value="main">
+  <label for="code">員工登入密碼</label>
+  <input id="code" type="password" autocomplete="new-password">
+  <label for="code2">再輸入一次</label>
+  <input id="code2" type="password" autocomplete="new-password">
+  <button id="go">測試並生成設定</button>
+  <p id="msg" class="muted"></p>
+</div>
+<div class="card" id="out" hidden>
+  <label for="cfg">config.js 內容</label>
+  <textarea id="cfg" readonly></textarea>
+  <button id="copy">複製</button>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const enc=new TextEncoder();
+const b64=u8=>btoa(String.fromCharCode.apply(null,u8));
+function msg(t,c){$('msg').textContent=t;$('msg').className=c||'muted'}
+$('go').onclick=async()=>{
+  const token=$('token').value.trim(),repo=$('repo').value.trim(),branch=$('branch').value.trim()||'main',code=$('code').value;
+  if(!token||!repo||!code)return msg('請填寫所有欄位','err');
+  if(code!==$('code2').value)return msg('兩次密碼不一致','err');
+  if(code.length<4)return msg('密碼最少 4 個字元','err');
+  if(code.length<8&&!confirm('密碼少於 8 個字元，懂技術的人可以在幾分鐘內破解並讀取記錄。仍然使用？'))return;
+  msg('檢查 token…');
+  try{
+    const r=await fetch('https://api.github.com/repos/'+repo,{headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json'}});
+    if(r.status===401)return msg('Token 無效','err');
+    if(r.status===404)return msg('找不到倉庫，或 token 沒有這個倉庫的權限','err');
+    const j=await r.json();
+    if(!j.private)return msg('這個倉庫是公開的！記錄會被所有人看到。請改用私人倉庫。','err');
+    if(j.permissions&&!j.permissions.push)return msg('Token 沒有寫入權限（Contents: Read and write）','err');
+    const it=await fetch('https://api.github.com/repos/'+repo+'/contents/items.json?ref='+encodeURIComponent(branch),{headers:{Authorization:'Bearer '+token}});
+    const warn=it.ok?'':'（注意：倉庫內未有 items.json）';
+    msg('加密中…');
+    const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),iter=600000;
+    const base=await crypto.subtle.importKey('raw',enc.encode(code),'PBKDF2',false,['deriveKey']);
+    const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:iter,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt']);
+    const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(JSON.stringify({token,repo,branch}))));
+    $('cfg').value='// 盤點系統設定（已加密，需要登入密碼才能解開）。由 setup.html 生成。\nwindow.STOCK_CONFIG = '+
+      JSON.stringify({v:1,iter,salt:b64(salt),iv:b64(iv),data:b64(ct)},null,1)+';\n';
+    $('out').hidden=false;msg('完成 ✓ '+warn,warn?'err':'ok');
+  }catch(e){msg('錯誤：'+e.message,'err')}
+};
+$('copy').onclick=()=>{navigator.clipboard.writeText($('cfg').value).then(()=>{$('copy').textContent='已複製 ✓'})};
+</script>
+</body>
+</html>

@@ -63,9 +63,13 @@ textarea{min-height:90px;resize:vertical}
 .item.low{border-color:rgba(199,58,38,.55);background:#fffafa}
 .info{flex:1;min-width:0}
 .nm{font-size:15px;font-weight:600}
+.zh{font-size:15px;font-weight:600;margin-top:1px}
+.chk{display:flex;align-items:center;gap:8px;margin:12px 0 14px;font-size:14px}
+.chk input{width:18px;height:18px}
 .meta{font-size:12px;color:var(--soy-muted);margin-top:2px}
 .badge{display:inline-block;font-size:11px;font-weight:600;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:1px}
 .badge[hidden]{display:none}
+.prev{display:inline-block;margin-top:4px;border:1px dashed var(--gold);background:var(--gold-soft);color:var(--soy);border-radius:6px;padding:1px 7px;font-size:12px}
 .badge.low{background:var(--chili-soft);color:var(--chili)}
 .qty{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .qty button{width:38px;height:42px;border:1px solid var(--line);background:var(--paper);border-radius:10px;font-size:20px;line-height:1}
@@ -109,6 +113,8 @@ textarea{min-height:90px;resize:vertical}
 #pdf th,#pdf td{border:1px solid #d9d0c6;padding:3px 6px;text-align:left}
 #pdf th{background:#f4e8d6;font-size:10px}
 #pdf td.n{text-align:center;width:70px}
+#pdf td .zh2{color:#555}
+#pdf td.p{color:#6e5747}
 #pdf td.s{width:90px;color:#6e5747}
 #pdf tr.c td{background:#faf5ee;font-weight:700}
 #pdf tr.lo td{background:#fde3df}
@@ -124,10 +130,22 @@ textarea{min-height:90px;resize:vertical}
   <img src="../assets/logo.webp" alt="">
   <h1>盤點 Stock Count<small>Beast Feast 饗獸食堂</small></h1>
   <button class="hbtn hidden" id="resetBtn">重新開始</button>
+  <button class="hbtn hidden" id="logoutBtn">登出</button>
 </header>
 
+<!-- 0. 登入 -->
+<main id="vLogin">
+  <div class="card">
+    <label class="f" for="code">登入密碼 Access code</label>
+    <input class="t" id="code" type="password" autocomplete="current-password">
+    <label class="chk"><input type="checkbox" id="remember" checked> 記住這部手機</label>
+    <button class="btn" id="loginBtn">登入</button>
+    <p class="muted" id="loginMsg" style="margin:10px 0 0"></p>
+  </div>
+</main>
+
 <!-- 1. 開始 -->
-<main id="vStart">
+<main id="vStart" class="hidden">
   <div class="card">
     <label class="f" for="staff">員工姓名 Staff name *</label>
     <input class="t" id="staff" autocomplete="name" placeholder="例如：Peter">
@@ -139,8 +157,9 @@ textarea{min-height:90px;resize:vertical}
     <div style="height:14px"></div>
     <button class="btn" id="startBtn">開始盤點</button>
     <p class="muted" id="resumeHint" style="margin:10px 0 0"></p>
+    <p class="muted" id="lastHint" style="margin:6px 0 0"></p>
   </div>
-  <p class="muted">輸入會自動儲存在這部手機，中途關閉網頁也不會遺失。</p>
+  <p class="muted">輸入會自動暫存在這部手機，中途關閉網頁也不會遺失。生成 PDF 時會同時儲存到公司記錄。</p>
 </main>
 
 <!-- 2. 盤點 -->
@@ -169,9 +188,12 @@ textarea{min-height:90px;resize:vertical}
   <button class="btn ghost" id="backBtn">返回修改</button>
   <div class="card ok hidden" id="doneCard" style="margin-top:12px">
     <b>PDF 已生成 ✓</b>
-    <p class="muted" id="fileName" style="margin:4px 0 12px"></p>
+    <p class="muted" id="fileName" style="margin:4px 0 4px"></p>
+    <p class="muted" id="syncMsg" style="margin:0 0 12px"></p>
+    <button class="btn ghost hidden" id="retryBtn" style="margin-bottom:10px">重試儲存到公司記錄</button>
     <button class="btn dark" id="shareBtn">分享（WhatsApp / Email）</button>
     <button class="btn ghost" id="dlBtn">下載 PDF</button>
+    <button class="btn ghost" id="newBtn">開始新一次盤點</button>
   </div>
 </main>
 
@@ -183,18 +205,68 @@ textarea{min-height:90px;resize:vertical}
 <div id="pdfWrap"><div id="pdf"></div></div>
 
 <script src="items.js"></script>
+<script src="config.js"></script>
 <script src="html2pdf.bundle.min.js"></script>
 <script>
 (function(){
-const KEY='bf-stockcount-v1';
-const LIST=window.STOCK_LIST;
+const KEY='bf-stockcount-v1',SKEY='bf-stockcount-session',LKEY='bf-stockcount-latest';
+// Temporary mode until config.js (private GitHub repo) is set up:
+// item list from items.js, shared code checked here, history kept on this phone.
+const LOCAL=!window.STOCK_CONFIG;
+const LOCAL_CODE_SHA256='03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4';
 const $=id=>document.getElementById(id);
+try{localStorage.removeItem('bf-stockcount-history')}catch(e){}
 
-// flatten items with stable ids
-const items=[];
-LIST.forEach((sh,si)=>sh.categories.forEach((c,ci)=>c.items.forEach((it,ii)=>{
-  items.push(Object.assign({id:si+'-'+ci+'-'+ii,sheet:si,cat:c.name,unit:unitOf(it.expected),exp:numOf(it.expected)},it));
-})));
+let LIST=[],items=[];
+function buildItems(list){
+  LIST=list;items=[];
+  LIST.forEach((sh,si)=>sh.categories.forEach((c,ci)=>c.items.forEach((it,ii)=>{
+    items.push(Object.assign({id:si+'-'+ci+'-'+ii,sheet:si,cat:c.name,unit:unitOf(it.expected),exp:numOf(it.expected)},it));
+  })));
+}
+// "Paprika 紅椒粉" -> ["Paprika","紅椒粉"]
+function split(n){const i=n.search(/[\u3400-\u9fff]/);return i>0?[n.slice(0,i).trim(),n.slice(i).trim()]:[n,'']}
+function nameHtml(n){const p=split(n);return '<div class="nm">'+esc(p[0])+'</div>'+(p[1]?'<div class="zh">'+esc(p[1])+'</div>':'')}
+function namePdf(n){const p=split(n);return esc(p[0])+(p[1]?'<br><span class="zh2">'+esc(p[1])+'</span>':'')}
+
+// ---------- GitHub storage (private repo) ----------
+let gh=null;           // {token, repo, branch}
+let latest=null;       // {current, previous} from history/latest.json
+const enc=new TextEncoder(),dec=new TextDecoder();
+function bytesToB64(u8){let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
+function b64ToBytes(b){return Uint8Array.from(atob(b.replace(/\s/g,'')),c=>c.charCodeAt(0))}
+async function api(path,opt){
+  opt=opt||{};
+  const url='https://api.github.com/repos/'+gh.repo+'/contents/'+path.split('/').map(encodeURIComponent).join('/')+(opt.method?'':'?ref='+encodeURIComponent(gh.branch));
+  const r=await fetch(url,Object.assign({},opt,{cache:'no-store',headers:{Authorization:'Bearer '+gh.token,Accept:'application/vnd.github+json'}}));
+  if(r.status===401)throw Object.assign(new Error('登入已失效'),{auth:true});
+  return r;
+}
+async function getJson(path){
+  const r=await api(path);
+  if(r.status===404)return null;
+  if(!r.ok)throw new Error('GitHub '+r.status);
+  const j=await r.json();return {data:JSON.parse(dec.decode(b64ToBytes(j.content))),sha:j.sha};
+}
+async function putFile(path,b64,msg){
+  const body=sha=>JSON.stringify({message:msg,content:b64,branch:gh.branch,sha:sha||undefined});
+  let r=await api(path,{method:'PUT',body:body()});
+  if(r.status===422||r.status===409){ // file exists -> need its sha
+    const g=await api(path);const sha=g.ok?(await g.json()).sha:null;
+    r=await api(path,{method:'PUT',body:body(sha)});
+  }
+  if(!r.ok)throw new Error('GitHub '+r.status);
+}
+async function unlock(code){
+  const C=window.STOCK_CONFIG;
+  const base=await crypto.subtle.importKey('raw',enc.encode(code),'PBKDF2',false,['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b64ToBytes(C.salt),iterations:C.iter,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64ToBytes(C.iv)},key,b64ToBytes(C.data));
+  return JSON.parse(dec.decode(pt));
+}
+function getSession(){try{return JSON.parse(sessionStorage.getItem(SKEY)||localStorage.getItem(SKEY))}catch(e){return null}}
+function setSession(s,remember){try{(remember?localStorage:sessionStorage).setItem(SKEY,JSON.stringify(s))}catch(e){}}
+function clearSession(){try{localStorage.removeItem(SKEY);sessionStorage.removeItem(SKEY)}catch(e){}}
 function unitOf(e){return (e||'').replace(/[\d\/\.\s—-]/g,'')}
 function numOf(e){
   const m=(e||'').match(/^\s*(\d+)\s*\/\s*(\d+)/); if(m) return +m[1]/+m[2];
@@ -203,6 +275,44 @@ function numOf(e){
 
 let st=load()||{};
 st.counts=st.counts||{};
+if(st.started&&!st.sid){st.sid=newSid();save()}
+// previous completed count (not the one in progress)
+function last(){if(!latest)return null;const c=latest.current;return c&&c.sid!==st.sid?c:(latest.previous||null)}
+function lastVal(it){const l=last();if(!l)return null;const v=l.counts[it.name];return v===undefined||v===''?null:v}
+function lastFmt(it){const v=lastVal(it);return v===null?'—':v+(it.unit?' '+it.unit:'')}
+function lastLabel(){const l=last();return l?l.date.slice(5)+' '+l.staff:''}
+function record(){
+  const counts={};items.forEach(it=>{if(filled(it))counts[it.name]=st.counts[it.id]});
+  return {sid:st.sid,date:st.date,time:st.time,staff:st.staff,at:new Date().toISOString(),notes:st.notes||'',counts};
+}
+function nextLatest(old,rec){old=old||{};return {current:rec,previous:old.current&&old.current.sid!==rec.sid?old.current:(old.previous||null)}}
+async function syncToGitHub(){
+  if(gh.local){
+    let old=null;try{old=JSON.parse(localStorage.getItem(LKEY))}catch(e){}
+    try{localStorage.setItem(LKEY,JSON.stringify(nextLatest(old,record())))}catch(e){}
+    st.synced=st.sid;save();
+    $('syncMsg').textContent='記錄已儲存在這部手機 ✓ 請把 PDF 發給公司。';return;
+  }
+  $('syncMsg').textContent='正在儲存到公司記錄…';$('retryBtn').classList.add('hidden');
+  try{
+    const rec=record();
+    const base=st.date+'_'+(st.time||'').replace(':','')+'_'+st.staff.replace(/[^\w\u4e00-\u9fff-]/g,'')+'_'+st.sid.slice(-4);
+    const msg='Stock count '+st.date+' '+st.staff;
+    await putFile('records/'+base+'.json',bytesToB64(enc.encode(JSON.stringify(rec,null,1))),msg);
+    await putFile('reports/'+base+'.pdf',bytesToB64(new Uint8Array(await pdfBlob.arrayBuffer())),msg);
+    const cur=await getJson('history/latest.json');const old=cur?cur.data:{};
+    const next=nextLatest(old,rec);
+    await putFile('history/latest.json',bytesToB64(enc.encode(JSON.stringify(next,null,1))),msg);
+    st.synced=st.sid;save();
+    $('syncMsg').textContent='已儲存到公司記錄 ✓';
+  }catch(err){
+    console.error(err);
+    $('syncMsg').textContent='未能儲存到公司記錄（'+err.message+'），請檢查網絡後重試，或先把 PDF 發給公司。';
+    $('retryBtn').classList.remove('hidden');
+  }
+}
+$('retryBtn').onclick=syncToGitHub;
+function newSid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 let tab=0, filter='all';
 
 function load(){try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null}}
@@ -219,26 +329,38 @@ const pad=n=>String(n).padStart(2,'0');
 $('date').value=st.date||now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
 $('time').value=st.time||pad(now.getHours())+':'+pad(now.getMinutes());
 $('staff').value=st.staff||'';
+function startApp(){
 const nFilled=items.filter(filled).length;
+if(last()) $('lastHint').textContent='上次盤點：'+last().date+' '+last().time+'（'+last().staff+'）';
 if(nFilled) $('resumeHint').textContent='有未完成的盤點（已填 '+nFilled+' 項），按「開始盤點」繼續。';
+$('logoutBtn').classList.remove('hidden');
+show(st.started?'count':'start');
+}
 
 $('startBtn').onclick=()=>{
   const s=$('staff').value.trim();
   if(!s){$('staff').focus();toast('請輸入員工姓名');return}
-  st.staff=s;st.date=$('date').value;st.time=$('time').value;st.started=true;save();
+  st.staff=s;st.date=$('date').value;st.time=$('time').value;st.started=true;if(!st.sid)st.sid=newSid();save();
   show('count');
 };
 $('resetBtn').onclick=()=>{
   if(!confirm('清除所有已輸入的數量，重新開始？'))return;
-  const staff=st.staff;st={counts:{},staff};save();location.reload();
+  newCount();
+};
+function newCount(){const staff=st.staff;st={counts:{},staff};save();location.reload()}
+$('newBtn').onclick=()=>{
+  if(st.synced!==st.sid&&!confirm('這次記錄未成功儲存到公司記錄，確定開始新一次盤點？'))return;
+  if(st.synced===st.sid&&!confirm('開始新一次盤點？'))return;
+  newCount();
 };
 
 function show(v){
+  $('vLogin').classList.toggle('hidden',v!=='login');
   $('vStart').classList.toggle('hidden',v!=='start');
   $('vCount').classList.toggle('hidden',v!=='count');
   $('vReview').classList.toggle('hidden',v!=='review');
   $('bar').classList.toggle('hidden',v!=='count');
-  $('resetBtn').classList.toggle('hidden',v==='start');
+  $('resetBtn').classList.toggle('hidden',v==='start'||v==='login');
   if(v==='count'){renderTabs();renderList();updateProg()}
   if(v==='review'){renderReview()}
   window.scrollTo(0,0);
@@ -269,9 +391,10 @@ function renderList(){
     if(filter==='low'&&!isLow(it))return;
     if(it.cat!==cur){cur=it.cat;html+='<div class="cat"><span>'+esc(cur)+'</span></div>'}
     count++;
-    html+='<div class="item'+cls(it)+'" data-id="'+it.id+'"><div class="info"><div class="nm">'+esc(it.name)+'</div>'+
+    html+='<div class="item'+cls(it)+'" data-id="'+it.id+'"><div class="info">'+nameHtml(it.name)+
       '<div class="meta">'+[it.source,it.expected&&it.expected!=='—'?'預期 '+esc(it.expected):''].filter(Boolean).join(' · ')+
-      '<span class="badge low"'+(isLow(it)?'':' hidden')+'>低</span></div></div>'+
+      '<span class="badge low"'+(isLow(it)?'':' hidden')+'>低</span></div>'+
+      (lastVal(it)!==null?'<button class="prev" data-copy="'+esc(lastVal(it))+'" title="按一下填入相同數量">上次 '+esc(lastFmt(it))+'</button>':'')+'</div>'+
       '<div class="qty"><button data-d="-1" aria-label="減">−</button>'+
       '<input inputmode="decimal" value="'+esc(st.counts[it.id]??'')+'" placeholder="—" aria-label="現有數量">'+
       '<button data-d="1" aria-label="加">+</button><span class="unit">'+esc(it.unit)+'</span></div></div>';
@@ -286,6 +409,9 @@ function refreshRow(row,it){
   updateProg();renderTabs();
 }
 $('list').addEventListener('click',e=>{
+  const c=e.target.closest('button[data-copy]');
+  if(c){const row=c.closest('.item'),it=byId(row.dataset.id);row.querySelector('input').value=c.dataset.copy;
+    st.counts[it.id]=c.dataset.copy;save();refreshRow(row,it);return}
   const b=e.target.closest('button[data-d]');if(!b)return;
   const row=b.closest('.item'),it=byId(row.dataset.id),inp=row.querySelector('input');
   let v=parseFloat(inp.value);if(isNaN(v))v=0;else v=Math.max(0,v+ +b.dataset.d);
@@ -333,14 +459,14 @@ function buildPdfHtml(){
     '<div class="r">生成時間<br>'+new Date().toLocaleString('zh-HK')+'</div></div>'+
     '<div class="kv"><div><span>員工 Staff</span><b>'+esc(st.staff)+'</b></div><div><span>盤點日期</span><b>'+esc(st.date)+' '+esc(st.time)+'</b></div>'+
     '<div><span>已填 / 總數</span><b>'+(items.length-todo)+' / '+items.length+'</b></div><div><span>低於預期</span><b style="color:#c73a26">'+low.length+'</b></div></div>';
-  if(low.length) h+='<h3>⚠ 需補貨 Below expected</h3><table><tr><th>Item</th><th>Source</th><th>預期</th><th>現有</th></tr>'+
-    low.map(x=>'<tr class="lo"><td>'+esc(x.name)+'</td><td class="s">'+esc(x.source)+'</td><td class="n">'+esc(x.expected)+'</td><td class="n cur">'+esc(fmt(x))+'</td></tr>').join('')+'</table>';
+  if(low.length) h+='<h3>⚠ 需補貨 Below expected</h3><table><tr><th>Item</th><th>Source</th><th>預期</th><th>上次</th><th>現有</th></tr>'+
+    low.map(x=>'<tr class="lo"><td>'+namePdf(x.name)+'</td><td class="s">'+esc(x.source)+'</td><td class="n">'+esc(x.expected)+'</td><td class="n p">'+esc(lastFmt(x))+'</td><td class="n cur">'+esc(fmt(x))+'</td></tr>').join('')+'</table>';
   LIST.forEach((sh,si)=>{
-    h+='<h3>'+esc(sh.title)+'</h3><table><tr><th>Item</th><th>Source</th><th>Expected 預期</th><th>Current 現有</th></tr>';
+    h+='<h3>'+esc(sh.title)+'</h3><table><tr><th>Item</th><th>Source</th><th>Expected 預期</th><th>Last 上次'+(last()?'<br>'+esc(lastLabel()):'')+'</th><th>Current 現有</th></tr>';
     let cur=null;
     items.filter(x=>x.sheet===si).forEach(x=>{
-      if(x.cat!==cur){cur=x.cat;h+='<tr class="c"><td colspan="4">'+esc(cur)+'</td></tr>'}
-      h+='<tr class="'+(isLow(x)?'lo':filled(x)?'':'na')+'"><td>'+esc(x.name)+'</td><td class="s">'+esc(x.source)+'</td><td class="n">'+esc(x.expected||'')+'</td><td class="n cur">'+esc(fmt(x))+'</td></tr>';
+      if(x.cat!==cur){cur=x.cat;h+='<tr class="c"><td colspan="5">'+esc(cur)+'</td></tr>'}
+      h+='<tr class="'+(isLow(x)?'lo':filled(x)?'':'na')+'"><td>'+namePdf(x.name)+'</td><td class="s">'+esc(x.source)+'</td><td class="n">'+esc(x.expected||'')+'</td><td class="n p">'+esc(lastFmt(x))+'</td><td class="n cur">'+esc(fmt(x))+'</td></tr>';
     });
     h+='</table>';
   });
@@ -364,6 +490,7 @@ $('pdfBtn').onclick=async()=>{
     $('fileName').textContent=pdfName;
     $('doneCard').classList.remove('hidden');
     $('doneCard').scrollIntoView({behavior:'smooth'});
+    syncToGitHub();
   }catch(err){console.error(err);toast('生成失敗：'+err.message)}
   btn.disabled=false;btn.textContent='重新生成 PDF';
 };
@@ -380,7 +507,44 @@ $('shareBtn').onclick=async()=>{
   }else{toast('此瀏覽器不支援分享，改為下載');download()}
 };
 
-show(st.started?'count':'start');
+// ---------- login ----------
+async function loadData(){
+  $('loginMsg').textContent='載入中…';
+  if(gh.local){
+    buildItems(window.STOCK_LIST);
+    try{latest=JSON.parse(localStorage.getItem(LKEY))}catch(e){latest=null}
+    $('loginMsg').textContent='';startApp();return;
+  }
+  try{
+    const [it,lt]=await Promise.all([getJson('items.json'),getJson('history/latest.json')]);
+    if(!it)throw new Error('找不到貨品清單 items.json');
+    buildItems(it.data);latest=lt?lt.data:null;
+    $('loginMsg').textContent='';startApp();
+  }catch(err){
+    console.error(err);
+    if(err.auth){clearSession();gh=null}
+    show('login');$('loginMsg').textContent=(err.auth?'登入已失效，請重新輸入密碼。':'載入失敗：'+err.message+'。請檢查網絡後重試。');
+  }
+}
+$('loginBtn').onclick=async()=>{
+  const code=$('code').value;if(!code){$('code').focus();return}
+  $('loginBtn').disabled=true;$('loginMsg').textContent='驗證中…';
+  if(LOCAL){
+    const h=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(code)))).map(b=>b.toString(16).padStart(2,'0')).join('');
+    gh=h===LOCAL_CODE_SHA256?{local:true}:null;
+  }else{try{gh=await unlock(code)}catch(e){gh=null}}
+  $('loginBtn').disabled=false;
+  if(!gh){$('loginMsg').textContent='密碼錯誤';$('code').select();return}
+  setSession(gh,$('remember').checked);$('code').value='';
+  loadData();
+};
+$('code').onkeydown=e=>{if(e.key==='Enter')$('loginBtn').click()};
+$('logoutBtn').onclick=()=>{if(confirm('登出？（未完成的盤點會保留在這部手機）')){clearSession();location.reload()}};
+
+gh=getSession();
+if(gh&&!!gh.local!==LOCAL){clearSession();gh=null} // mode changed (config.js added/removed)
+if(gh){show('login');loadData()}
+else show('login');
 })();
 </script>
 </body>
