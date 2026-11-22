@@ -64,6 +64,10 @@ Then swap `width`/`height` for a `viewBox` + `shape-rendering="crispEdges"`.
 Mobile page for staff stock counts: https://www.beastfeast.uk/stockcount/
 (`noindex`, not linked from the main page).
 
+- **Temporary mode** (no `config.js` yet): shared code `1234` (SHA-256 checked
+  in the page — not real security), item list from the public `stockcount/items.js`,
+  "上次" history kept on each phone. Adding `config.js` switches to GitHub mode
+  automatically; then delete `items.js`.
 - **Login**: staff enter an access code. `stockcount/config.js` holds a GitHub
   token encrypted with that code (PBKDF2 600k + AES-GCM); a wrong code cannot
   decrypt it. Generate `config.js` with `stockcount/setup.html`.

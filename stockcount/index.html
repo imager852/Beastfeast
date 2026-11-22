@@ -204,11 +204,16 @@ textarea{min-height:90px;resize:vertical}
 
 <div id="pdfWrap"><div id="pdf"></div></div>
 
+<script src="items.js"></script>
 <script src="config.js"></script>
 <script src="html2pdf.bundle.min.js"></script>
 <script>
 (function(){
-const KEY='bf-stockcount-v1',SKEY='bf-stockcount-session';
+const KEY='bf-stockcount-v1',SKEY='bf-stockcount-session',LKEY='bf-stockcount-latest';
+// Temporary mode until config.js (private GitHub repo) is set up:
+// item list from items.js, shared code checked here, history kept on this phone.
+const LOCAL=!window.STOCK_CONFIG;
+const LOCAL_CODE_SHA256='03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4';
 const $=id=>document.getElementById(id);
 try{localStorage.removeItem('bf-stockcount-history')}catch(e){}
 
@@ -280,7 +285,14 @@ function record(){
   const counts={};items.forEach(it=>{if(filled(it))counts[it.name]=st.counts[it.id]});
   return {sid:st.sid,date:st.date,time:st.time,staff:st.staff,at:new Date().toISOString(),notes:st.notes||'',counts};
 }
+function nextLatest(old,rec){old=old||{};return {current:rec,previous:old.current&&old.current.sid!==rec.sid?old.current:(old.previous||null)}}
 async function syncToGitHub(){
+  if(gh.local){
+    let old=null;try{old=JSON.parse(localStorage.getItem(LKEY))}catch(e){}
+    try{localStorage.setItem(LKEY,JSON.stringify(nextLatest(old,record())))}catch(e){}
+    st.synced=st.sid;save();
+    $('syncMsg').textContent='記錄已儲存在這部手機 ✓ 請把 PDF 發給公司。';return;
+  }
   $('syncMsg').textContent='正在儲存到公司記錄…';$('retryBtn').classList.add('hidden');
   try{
     const rec=record();
@@ -289,7 +301,7 @@ async function syncToGitHub(){
     await putFile('records/'+base+'.json',bytesToB64(enc.encode(JSON.stringify(rec,null,1))),msg);
     await putFile('reports/'+base+'.pdf',bytesToB64(new Uint8Array(await pdfBlob.arrayBuffer())),msg);
     const cur=await getJson('history/latest.json');const old=cur?cur.data:{};
-    const next={current:rec,previous:old.current&&old.current.sid!==rec.sid?old.current:(old.previous||null)};
+    const next=nextLatest(old,rec);
     await putFile('history/latest.json',bytesToB64(enc.encode(JSON.stringify(next,null,1))),msg);
     st.synced=st.sid;save();
     $('syncMsg').textContent='已儲存到公司記錄 ✓';
@@ -498,6 +510,11 @@ $('shareBtn').onclick=async()=>{
 // ---------- login ----------
 async function loadData(){
   $('loginMsg').textContent='載入中…';
+  if(gh.local){
+    buildItems(window.STOCK_LIST);
+    try{latest=JSON.parse(localStorage.getItem(LKEY))}catch(e){latest=null}
+    $('loginMsg').textContent='';startApp();return;
+  }
   try{
     const [it,lt]=await Promise.all([getJson('items.json'),getJson('history/latest.json')]);
     if(!it)throw new Error('找不到貨品清單 items.json');
@@ -511,9 +528,11 @@ async function loadData(){
 }
 $('loginBtn').onclick=async()=>{
   const code=$('code').value;if(!code){$('code').focus();return}
-  if(!window.STOCK_CONFIG){$('loginMsg').textContent='系統尚未設定。';return}
   $('loginBtn').disabled=true;$('loginMsg').textContent='驗證中…';
-  try{gh=await unlock(code)}catch(e){gh=null}
+  if(LOCAL){
+    const h=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(code)))).map(b=>b.toString(16).padStart(2,'0')).join('');
+    gh=h===LOCAL_CODE_SHA256?{local:true}:null;
+  }else{try{gh=await unlock(code)}catch(e){gh=null}}
   $('loginBtn').disabled=false;
   if(!gh){$('loginMsg').textContent='密碼錯誤';$('code').select();return}
   setSession(gh,$('remember').checked);$('code').value='';
@@ -523,8 +542,8 @@ $('code').onkeydown=e=>{if(e.key==='Enter')$('loginBtn').click()};
 $('logoutBtn').onclick=()=>{if(confirm('登出？（未完成的盤點會保留在這部手機）')){clearSession();location.reload()}};
 
 gh=getSession();
-if(!window.STOCK_CONFIG){show('login');$('loginMsg').textContent='系統尚未設定，請聯絡管理員。';$('loginBtn').disabled=true}
-else if(gh){show('login');loadData()}
+if(gh&&!!gh.local!==LOCAL){clearSession();gh=null} // mode changed (config.js added/removed)
+if(gh){show('login');loadData()}
 else show('login');
 })();
 </script>
