@@ -331,7 +331,8 @@ let tab=0, filter='all';
 function load(){try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
 function filled(it){const v=st.counts[it.id];return v!==undefined&&v!==''}
-function isLow(it){if(!filled(it)||it.exp===null)return false;const v=parseFloat(st.counts[it.id]);return !isNaN(v)&&v<it.exp}
+// below expected; items without an expected number count as low only when 0
+function isLow(it){if(!filled(it))return false;const v=parseFloat(st.counts[it.id]);if(isNaN(v))return false;return it.exp===null?v<=0:v<it.exp}
 function fmt(it){return filled(it)?st.counts[it.id]+(it.unit?' '+it.unit:''):'—'}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)}
@@ -471,7 +472,7 @@ function renderReview(){
   if(todo.length) h+='<div class="card warn"><b>還有 '+todo.length+' 項未填</b><div class="muted">未填的項目在 PDF 會顯示「—」。可返回補填，或直接生成。</div>'+
     '<ul class="list">'+todo.slice(0,8).map(x=>'<li>'+esc(x.name)+'</li>').join('')+(todo.length>8?'<li>…等 '+(todo.length-8)+' 項</li>':'')+'</ul></div>';
   else h+='<div class="card ok"><b>全部項目已填 ✓</b></div>';
-  if(low.length) h+='<div class="card"><b>低於預期（需補貨）</b><ul class="list">'+low.map(x=>'<li>'+esc(x.name)+'：'+esc(fmt(x))+'（預期 '+esc(x.expected)+'）</li>').join('')+'</ul></div>';
+  if(low.length) h+='<div class="card"><b>低於預期（需補貨）</b><ul class="list">'+low.map(x=>'<li>'+esc(x.name)+'：'+esc(fmt(x))+'（預期 '+esc(x.expected||'—')+'）</li>').join('')+'</ul></div>';
   $('checks').innerHTML=h;
   $('notes').value=st.notes||'';
   $('doneCard').classList.add('hidden');
