@@ -452,7 +452,7 @@ $('list').addEventListener('input',e=>{
   clearTimeout(advTimer);
   if(v!==''&&!/[.\/]$/.test(v)){const inp=e.target;advTimer=setTimeout(()=>{if(document.activeElement===inp)focusNext(inp)},ADV_MS)}
 });
-const ADV_MS=500;let advTimer=null;
+const ADV_MS=1000;let advTimer=null;
 function focusNext(inp){
   const all=[...$('list').querySelectorAll('.item input')],n=all[all.indexOf(inp)+1];
   if(n){n.focus();n.scrollIntoView({block:'center',behavior:'smooth'})}
