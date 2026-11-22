@@ -36,7 +36,10 @@ main{max-width:720px;margin:0 auto;padding:12px 16px 110px}
 .nm{font-weight:600;font-size:15px}
 .zh{font-weight:600;font-size:15px}
 .src{font-size:12px;color:var(--muted)}
-.row input{width:96px;text-align:center;border:1px solid var(--line);border-radius:10px;padding:10px 4px;font-size:16px;font-weight:600}
+.srcin{margin-top:6px;width:100%;max-width:200px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:14px;color:var(--muted)}
+.srcin:focus{color:var(--soy)}
+.was{font-size:12px;color:#a4631a;margin-top:3px}
+.row input.exp{width:96px;text-align:center;border:1px solid var(--line);border-radius:10px;padding:10px 4px;font-size:16px;font-weight:600}
 .bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 16px calc(env(safe-area-inset-bottom) + 10px)}
 .bar .in{max-width:720px;margin:0 auto;display:flex;gap:12px;align-items:center}
 .bar .in span{flex:1;font-size:13px;color:var(--muted)}
@@ -60,10 +63,11 @@ ol{padding-left:20px;font-size:14px;margin:8px 0}
 </main>
 
 <main id="vEdit" class="hidden">
-  <p class="muted">直接修改「預期」，例如 <b>2包</b>、<b>10瓶</b>、<b>1/2盒</b>。留空 = 沒有預期（填 0 才算低於預期）。改過的項目會以黃色標示。</p>
+  <p class="muted">可修改供應商（Source，名稱下方）和「預期」（右邊），例如 <b>2包</b>、<b>10瓶</b>、<b>1/2盒</b>。留空 = 沒有預期（填 0 才算低於預期）。改過的項目會以黃色標示。</p>
   <div class="tabs" id="tabs"></div>
   <input class="t" id="q" type="search" placeholder="搜尋貨品…">
   <div id="list"></div>
+  <datalist id="srcList"></datalist>
 </main>
 
 <main id="vSaved" class="hidden">
@@ -133,25 +137,31 @@ function render(){
     if(!rows.length)return;
     h+='<div class="cat">'+esc(c.name)+'</div>';
     rows.forEach(({it,ii})=>{
-      const p=split(it.name),o=orig[si].categories[ci].items[ii].expected||'';
-      h+='<div class="row'+((it.expected||'')!==o?' chg':'')+'"><div class="i"><div class="nm">'+esc(p[0])+'</div>'+(p[1]?'<div class="zh">'+esc(p[1])+'</div>':'')+
-        '<div class="src">'+esc(it.source||'')+((it.expected||'')!==o?' · 原本 '+esc(o||'（空）'):'')+'</div></div>'+
-        '<input data-k="'+si+'.'+ci+'.'+ii+'" value="'+esc(it.expected||'')+'" placeholder="—" aria-label="預期數量"></div>';
+      const p=split(it.name),k=si+'.'+ci+'.'+ii;
+      h+='<div class="row'+(changed(si,ci,ii)?' chg':'')+'"><div class="i"><div class="nm">'+esc(p[0])+'</div>'+(p[1]?'<div class="zh">'+esc(p[1])+'</div>':'')+
+        '<input class="srcin" data-k="'+k+'" data-f="source" list="srcList" value="'+esc(it.source||'')+'" placeholder="Source 供應商" aria-label="供應商">'+
+        '<div class="was">'+wasText(si,ci,ii)+'</div></div>'+
+        '<input class="exp" data-k="'+k+'" data-f="expected" value="'+esc(it.expected||'')+'" placeholder="—" aria-label="預期數量"></div>';
     });
   }));
   $('list').innerHTML=h||'<p class="muted">沒有符合的貨品</p>';
   counts();
 }
-function changes(){let n=0;LIST.forEach((sh,si)=>sh.categories.forEach((c,ci)=>c.items.forEach((it,ii)=>{if((it.expected||'')!==(orig[si].categories[ci].items[ii].expected||''))n++})));return n}
+const F=['source','expected'];
+function changed(si,ci,ii){const a=LIST[si].categories[ci].items[ii],b=orig[si].categories[ci].items[ii];return F.some(f=>(a[f]||'')!==(b[f]||''))}
+function wasText(si,ci,ii){const a=LIST[si].categories[ci].items[ii],b=orig[si].categories[ci].items[ii];
+  return F.filter(f=>(a[f]||'')!==(b[f]||'')).map(f=>'原本'+(f==='source'?'供應商':'預期')+'：'+esc(b[f]||'（空）')).join('　')}
+function changes(){let n=0;LIST.forEach((sh,si)=>sh.categories.forEach((c,ci)=>c.items.forEach((it,ii)=>{if(changed(si,ci,ii))n++})));return n}
+function fillSources(){const set=new Set();LIST.forEach(sh=>sh.categories.forEach(c=>c.items.forEach(it=>{if(it.source)set.add(it.source)})));
+  $('srcList').innerHTML=[...set].sort().map(x=>'<option value="'+esc(x)+'">').join('')}
 function counts(){const n=changes();$('chgCount').textContent=n?'已修改 '+n+' 項':'未有修改';$('saveBtn').disabled=!n}
 
 $('tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;tab=+b.dataset.t;render()};
 $('q').oninput=render;
 $('list').addEventListener('input',e=>{
   const k=e.target.dataset.k;if(!k)return;const [si,ci,ii]=k.split('.').map(Number);
-  LIST[si].categories[ci].items[ii].expected=e.target.value.trim();
-  const row=e.target.closest('.row'),o=orig[si].categories[ci].items[ii].expected||'';
-  row.classList.toggle('chg',e.target.value.trim()!==o);counts();
+  LIST[si].categories[ci].items[ii][e.target.dataset.f]=e.target.value.trim();
+  const row=e.target.closest('.row');row.classList.toggle('chg',changed(si,ci,ii));row.querySelector('.was').innerHTML=wasText(si,ci,ii);counts();
 });
 window.addEventListener('beforeunload',e=>{if(LIST&&orig&&changes()&&!$('vEdit').classList.contains('hidden')){e.preventDefault();e.returnValue=''}});
 
@@ -168,7 +178,7 @@ $('saveBtn').onclick=async()=>{
   $('saveBtn').disabled=true;$('chgCount').textContent='儲存中…';
   try{
     const n=changes();
-    const r=await fetch(url('items.json'),{method:'PUT',headers:hdr(),body:JSON.stringify({message:'Update expected stock ('+n+' items)',branch:gh.branch,sha,content:b64(enc.encode(json))})});
+    const r=await fetch(url('items.json'),{method:'PUT',headers:hdr(),body:JSON.stringify({message:'Update expected stock / source ('+n+' items)',branch:gh.branch,sha,content:b64(enc.encode(json))})});
     if(r.status===409||r.status===422)throw new Error('清單剛被其他人修改，請重新載入頁面再改');
     if(!r.ok)throw new Error('GitHub '+r.status);
     sha=(await r.json()).content.sha;orig=JSON.parse(json);
@@ -181,7 +191,7 @@ $('againBtn').onclick=()=>{show('vEdit');render()};
 
 async function start(){
   $('loginMsg').textContent='載入中…';
-  try{await load();orig=JSON.parse(JSON.stringify(LIST));$('loginMsg').textContent='';show('vEdit');render()}
+  try{await load();orig=JSON.parse(JSON.stringify(LIST));$('loginMsg').textContent='';show('vEdit');fillSources();render()}
   catch(err){$('loginMsg').textContent='載入失敗：'+err.message;show('vLogin')}
 }
 $('loginBtn').onclick=async()=>{
