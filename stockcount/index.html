@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#2b1a10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BF 盤點">
+<title>BF 盤點 Stock Count</title>
+<link rel="icon" href="../assets/logo.webp">
+<link rel="apple-touch-icon" href="../assets/logo.webp">
+<style>
+:root{
+  --rice:#fbf6ee;--paper:#f4e8d6;--card:#fff;--soy:#2b1a10;--soy-muted:#6e5747;
+  --on-soy:#fbf1e3;--chili:#c73a26;--chili-soft:#fbe3df;--gold:#f0a83c;--gold-soft:#fde7c2;
+  --scallion:#4f7d32;--scallion-soft:#e3eedb;--line:rgba(43,26,16,.13);
+  --body:"Inter","PingFang TC","PingFang SC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--rice);color:var(--soy);font-family:var(--body);font-size:16px;line-height:1.35;-webkit-text-size-adjust:100%}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+
+/* header */
+header{background:var(--soy);color:var(--on-soy);padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;display:flex;align-items:center;gap:10px}
+header img{width:36px;height:36px;border-radius:50%;background:#fff;object-fit:cover}
+header h1{font-size:17px;margin:0;flex:1}
+header h1 small{display:block;font-weight:400;font-size:12px;opacity:.75}
+.hbtn{background:transparent;border:1px solid rgba(251,241,227,.35);color:var(--on-soy);border-radius:999px;padding:6px 12px;font-size:13px}
+
+main{max-width:720px;margin:0 auto;padding:12px 16px 120px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+label.f{display:block;font-size:13px;color:var(--soy-muted);margin-bottom:4px}
+input.t,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff;font-size:16px}
+textarea{min-height:90px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:600;background:var(--chili);color:#fff}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--soy)}
+.btn.dark{background:var(--soy);color:var(--on-soy)}
+.btn:disabled{opacity:.5}
+.btn+.btn{margin-top:10px}
+.muted{color:var(--soy-muted);font-size:13px}
+
+/* tabs + search */
+.sticky{position:sticky;top:0;z-index:5;background:var(--rice);padding:8px 0 8px;margin:0 -16px;padding-left:16px;padding-right:16px;border-bottom:1px solid var(--line)}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.tab{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 6px;font-size:14px;font-weight:600}
+.tab span{display:block;font-weight:400;font-size:12px;color:var(--soy-muted)}
+.tab.on{background:var(--soy);color:var(--on-soy);border-color:var(--soy)}
+.tab.on span{color:#d6c2ad}
+.search{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;font-size:16px}
+.filters{display:flex;gap:6px;margin-top:8px;overflow-x:auto}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:13px;white-space:nowrap}
+.chip.on{background:var(--gold-soft);border-color:var(--gold)}
+
+/* items */
+.cat{margin:16px 0 6px;font-size:14px;font-weight:700;color:var(--soy-muted);display:flex;justify-content:space-between}
+.item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 10px 10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.item.done{border-color:rgba(79,125,50,.45);background:#fbfdf9}
+.item.low{border-color:rgba(199,58,38,.55);background:#fffafa}
+.info{flex:1;min-width:0}
+.nm{font-size:15px;font-weight:600}
+.meta{font-size:12px;color:var(--soy-muted);margin-top:2px}
+.badge{display:inline-block;font-size:11px;font-weight:600;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:1px}
+.badge[hidden]{display:none}
+.badge.low{background:var(--chili-soft);color:var(--chili)}
+.qty{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.qty button{width:38px;height:42px;border:1px solid var(--line);background:var(--paper);border-radius:10px;font-size:20px;line-height:1}
+.qty input{width:56px;height:42px;text-align:center;border:1px solid var(--line);border-radius:10px;font-size:17px;font-weight:600;padding:0 2px}
+.unit{font-size:12px;color:var(--soy-muted);width:26px;text-align:left}
+.empty{text-align:center;color:var(--soy-muted);padding:30px 0}
+
+/* bottom bar */
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 16px calc(env(safe-area-inset-bottom) + 10px);z-index:6}
+.bar .in{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.prog{flex:1;font-size:13px;color:var(--soy-muted)}
+.prog b{color:var(--soy);font-size:15px}
+.pbar{height:6px;background:var(--paper);border-radius:3px;margin-top:5px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--scallion);width:0}
+.bar .btn{width:auto;padding:12px 20px}
+
+/* review */
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.sum div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.sum b{display:block;font-size:22px}
+.sum span{font-size:12px;color:var(--soy-muted)}
+.list{margin:6px 0 0;padding-left:18px;font-size:14px}
+.list li{margin:2px 0}
+.warn{background:var(--gold-soft);border-color:var(--gold)}
+.ok{background:var(--scallion-soft);border-color:rgba(79,125,50,.4)}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--soy);color:var(--on-soy);padding:10px 16px;border-radius:10px;font-size:14px;z-index:20}
+
+/* PDF sheet (rendered offscreen) */
+#pdfWrap{position:fixed;left:-10000px;top:0}
+#pdf{width:794px;padding:34px 38px;background:#fff;color:#1d120b;font-family:var(--body);font-size:11px;line-height:1.3}
+#pdf .ph{display:flex;align-items:center;gap:12px;border-bottom:2px solid #2b1a10;padding-bottom:10px;margin-bottom:10px}
+#pdf .ph img{width:46px;height:46px;border-radius:50%}
+#pdf h2{margin:0;font-size:18px}
+#pdf .ph .r{margin-left:auto;text-align:right;font-size:11px}
+#pdf .kv{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+#pdf .kv div{border:1px solid #ddd;border-radius:6px;padding:6px 8px}
+#pdf .kv span{display:block;color:#6e5747;font-size:10px}
+#pdf .kv b{font-size:13px}
+#pdf h3{font-size:13px;margin:14px 0 4px;background:#2b1a10;color:#fff;padding:5px 8px;border-radius:4px}
+#pdf table{width:100%;border-collapse:collapse}
+#pdf th,#pdf td{border:1px solid #d9d0c6;padding:3px 6px;text-align:left}
+#pdf th{background:#f4e8d6;font-size:10px}
+#pdf td.n{text-align:center;width:70px}
+#pdf td.s{width:90px;color:#6e5747}
+#pdf tr.c td{background:#faf5ee;font-weight:700}
+#pdf tr.lo td{background:#fde3df}
+#pdf tr.lo td.cur{color:#c73a26;font-weight:700}
+#pdf tr.na td.cur{color:#b0a395}
+#pdf .note{border:1px solid #ddd;border-radius:6px;padding:8px;white-space:pre-wrap;min-height:30px}
+#pdf .sig{margin-top:22px;display:flex;justify-content:space-between;font-size:11px}
+#pdf .sig div{width:45%;border-top:1px solid #333;padding-top:4px}
+</style>
+</head>
+<body>
+<header>
+  <img src="../assets/logo.webp" alt="">
+  <h1>盤點 Stock Count<small>Beast Feast 饗獸食堂</small></h1>
+  <button class="hbtn hidden" id="resetBtn">重新開始</button>
+</header>
+
+<!-- 1. 開始 -->
+<main id="vStart">
+  <div class="card">
+    <label class="f" for="staff">員工姓名 Staff name *</label>
+    <input class="t" id="staff" autocomplete="name" placeholder="例如：Peter">
+    <div style="height:10px"></div>
+    <div class="row2">
+      <div><label class="f" for="date">日期</label><input class="t" id="date" type="date"></div>
+      <div><label class="f" for="time">時間</label><input class="t" id="time" type="time"></div>
+    </div>
+    <div style="height:14px"></div>
+    <button class="btn" id="startBtn">開始盤點</button>
+    <p class="muted" id="resumeHint" style="margin:10px 0 0"></p>
+  </div>
+  <p class="muted">輸入會自動儲存在這部手機，中途關閉網頁也不會遺失。</p>
+</main>
+
+<!-- 2. 盤點 -->
+<main id="vCount" class="hidden">
+  <div class="sticky">
+    <div class="tabs" id="tabs"></div>
+    <input class="search" id="q" type="search" placeholder="搜尋貨品 Search…">
+    <div class="filters">
+      <button class="chip on" data-f="all">全部</button>
+      <button class="chip" data-f="todo">未填</button>
+      <button class="chip" data-f="low">低於預期</button>
+    </div>
+  </div>
+  <div id="list"></div>
+</main>
+
+<!-- 3. 確認 -->
+<main id="vReview" class="hidden">
+  <div class="sum" id="sum"></div>
+  <div id="checks"></div>
+  <div class="card">
+    <label class="f" for="notes">備註 Notes（例如：損壞、過期、需緊急補貨）</label>
+    <textarea id="notes" placeholder="選填"></textarea>
+  </div>
+  <button class="btn" id="pdfBtn">生成 PDF</button>
+  <button class="btn ghost" id="backBtn">返回修改</button>
+  <div class="card ok hidden" id="doneCard" style="margin-top:12px">
+    <b>PDF 已生成 ✓</b>
+    <p class="muted" id="fileName" style="margin:4px 0 12px"></p>
+    <button class="btn dark" id="shareBtn">分享（WhatsApp / Email）</button>
+    <button class="btn ghost" id="dlBtn">下載 PDF</button>
+  </div>
+</main>
+
+<div class="bar hidden" id="bar"><div class="in">
+  <div class="prog"><b id="pDone">0</b> / <span id="pAll">0</span> 已填<div class="pbar"><i id="pFill"></i></div></div>
+  <button class="btn" id="reviewBtn">完成 →</button>
+</div></div>
+
+<div id="pdfWrap"><div id="pdf"></div></div>
+
+<script src="items.js"></script>
+<script src="html2pdf.bundle.min.js"></script>
+<script>
+(function(){
+const KEY='bf-stockcount-v1';
+const LIST=window.STOCK_LIST;
+const $=id=>document.getElementById(id);
+
+// flatten items with stable ids
+const items=[];
+LIST.forEach((sh,si)=>sh.categories.forEach((c,ci)=>c.items.forEach((it,ii)=>{
+  items.push(Object.assign({id:si+'-'+ci+'-'+ii,sheet:si,cat:c.name,unit:unitOf(it.expected),exp:numOf(it.expected)},it));
+})));
+function unitOf(e){return (e||'').replace(/[\d\/\.\s—-]/g,'')}
+function numOf(e){
+  const m=(e||'').match(/^\s*(\d+)\s*\/\s*(\d+)/); if(m) return +m[1]/+m[2];
+  const n=parseFloat(e); return isNaN(n)?null:n;
+}
+
+let st=load()||{};
+st.counts=st.counts||{};
+let tab=0, filter='all';
+
+function load(){try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+function filled(it){const v=st.counts[it.id];return v!==undefined&&v!==''}
+function isLow(it){if(!filled(it)||it.exp===null)return false;const v=parseFloat(st.counts[it.id]);return !isNaN(v)&&v<it.exp}
+function fmt(it){return filled(it)?st.counts[it.id]+(it.unit?' '+it.unit:''):'—'}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)}
+
+// ---------- start ----------
+const now=new Date();
+const pad=n=>String(n).padStart(2,'0');
+$('date').value=st.date||now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+$('time').value=st.time||pad(now.getHours())+':'+pad(now.getMinutes());
+$('staff').value=st.staff||'';
+const nFilled=items.filter(filled).length;
+if(nFilled) $('resumeHint').textContent='有未完成的盤點（已填 '+nFilled+' 項），按「開始盤點」繼續。';
+
+$('startBtn').onclick=()=>{
+  const s=$('staff').value.trim();
+  if(!s){$('staff').focus();toast('請輸入員工姓名');return}
+  st.staff=s;st.date=$('date').value;st.time=$('time').value;st.started=true;save();
+  show('count');
+};
+$('resetBtn').onclick=()=>{
+  if(!confirm('清除所有已輸入的數量，重新開始？'))return;
+  const staff=st.staff;st={counts:{},staff};save();location.reload();
+};
+
+function show(v){
+  $('vStart').classList.toggle('hidden',v!=='start');
+  $('vCount').classList.toggle('hidden',v!=='count');
+  $('vReview').classList.toggle('hidden',v!=='review');
+  $('bar').classList.toggle('hidden',v!=='count');
+  $('resetBtn').classList.toggle('hidden',v==='start');
+  if(v==='count'){renderTabs();renderList();updateProg()}
+  if(v==='review'){renderReview()}
+  window.scrollTo(0,0);
+}
+
+// ---------- count ----------
+function renderTabs(){
+  $('tabs').innerHTML=LIST.map((sh,i)=>{
+    const its=items.filter(x=>x.sheet===i);
+    return '<button class="tab'+(i===tab?' on':'')+'" data-t="'+i+'">'+esc(sh.title.split(' ')[0])+
+      '<span>'+its.filter(filled).length+' / '+its.length+'</span></button>';
+  }).join('');
+}
+$('tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;tab=+b.dataset.t;renderTabs();renderList();window.scrollTo(0,0)};
+document.querySelector('.filters').onclick=e=>{
+  const b=e.target.closest('.chip');if(!b)return;filter=b.dataset.f;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c===b));renderList();
+};
+$('q').oninput=renderList;
+
+function renderList(){
+  const q=$('q').value.trim().toLowerCase();
+  let html='',cur=null,count=0;
+  // search spans both tabs
+  items.filter(it=>(q?true:it.sheet===tab)).forEach(it=>{
+    if(q&&!it.name.toLowerCase().includes(q))return;
+    if(filter==='todo'&&filled(it))return;
+    if(filter==='low'&&!isLow(it))return;
+    if(it.cat!==cur){cur=it.cat;html+='<div class="cat"><span>'+esc(cur)+'</span></div>'}
+    count++;
+    html+='<div class="item'+cls(it)+'" data-id="'+it.id+'"><div class="info"><div class="nm">'+esc(it.name)+'</div>'+
+      '<div class="meta">'+[it.source,it.expected&&it.expected!=='—'?'預期 '+esc(it.expected):''].filter(Boolean).join(' · ')+
+      '<span class="badge low"'+(isLow(it)?'':' hidden')+'>低</span></div></div>'+
+      '<div class="qty"><button data-d="-1" aria-label="減">−</button>'+
+      '<input inputmode="decimal" value="'+esc(st.counts[it.id]??'')+'" placeholder="—" aria-label="現有數量">'+
+      '<button data-d="1" aria-label="加">+</button><span class="unit">'+esc(it.unit)+'</span></div></div>';
+  });
+  $('list').innerHTML=count?html:'<div class="empty">'+(filter==='todo'?'全部已填 ✓':'沒有符合的貨品')+'</div>';
+}
+function cls(it){return isLow(it)?' low':filled(it)?' done':''}
+function byId(id){return items.find(x=>x.id===id)}
+function refreshRow(row,it){
+  row.className='item'+cls(it);
+  row.querySelector('.badge').hidden=!isLow(it);
+  updateProg();renderTabs();
+}
+$('list').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-d]');if(!b)return;
+  const row=b.closest('.item'),it=byId(row.dataset.id),inp=row.querySelector('input');
+  let v=parseFloat(inp.value);if(isNaN(v))v=0;else v=Math.max(0,v+ +b.dataset.d);
+  if(!filled(it)&&b.dataset.d==='-1')v=0;
+  inp.value=+v.toFixed(2);st.counts[it.id]=inp.value;save();refreshRow(row,it);
+});
+$('list').addEventListener('input',e=>{
+  if(e.target.tagName!=='INPUT')return;
+  const row=e.target.closest('.item'),it=byId(row.dataset.id);
+  const v=e.target.value.replace(',','.').trim();
+  if(v==='')delete st.counts[it.id];else st.counts[it.id]=v;
+  save();refreshRow(row,it);
+});
+$('list').addEventListener('focusin',e=>{if(e.target.tagName==='INPUT')e.target.select()});
+
+function updateProg(){
+  const d=items.filter(filled).length;
+  $('pDone').textContent=d;$('pAll').textContent=items.length;
+  $('pFill').style.width=(d/items.length*100)+'%';
+}
+$('reviewBtn').onclick=()=>show('review');
+$('backBtn').onclick=()=>show('count');
+
+// ---------- review ----------
+function renderReview(){
+  const todo=items.filter(x=>!filled(x)),low=items.filter(isLow);
+  $('sum').innerHTML='<div><b>'+(items.length-todo.length)+'</b><span>已填</span></div>'+
+    '<div><b>'+todo.length+'</b><span>未填</span></div><div><b style="color:var(--chili)">'+low.length+'</b><span>低於預期</span></div>';
+  let h='';
+  if(todo.length) h+='<div class="card warn"><b>還有 '+todo.length+' 項未填</b><div class="muted">未填的項目在 PDF 會顯示「—」。可返回補填，或直接生成。</div>'+
+    '<ul class="list">'+todo.slice(0,8).map(x=>'<li>'+esc(x.name)+'</li>').join('')+(todo.length>8?'<li>…等 '+(todo.length-8)+' 項</li>':'')+'</ul></div>';
+  else h+='<div class="card ok"><b>全部項目已填 ✓</b></div>';
+  if(low.length) h+='<div class="card"><b>低於預期（需補貨）</b><ul class="list">'+low.map(x=>'<li>'+esc(x.name)+'：'+esc(fmt(x))+'（預期 '+esc(x.expected)+'）</li>').join('')+'</ul></div>';
+  $('checks').innerHTML=h;
+  $('notes').value=st.notes||'';
+  $('doneCard').classList.add('hidden');
+}
+$('notes').oninput=()=>{st.notes=$('notes').value;save()};
+
+// ---------- PDF ----------
+let pdfBlob=null,pdfName='';
+function buildPdfHtml(){
+  const todo=items.filter(x=>!filled(x)).length,low=items.filter(isLow);
+  let h='<div class="ph"><img src="../assets/logo.webp"><div><h2>Stock Count 盤點報告</h2><div>Beast Feast 饗獸食堂</div></div>'+
+    '<div class="r">生成時間<br>'+new Date().toLocaleString('zh-HK')+'</div></div>'+
+    '<div class="kv"><div><span>員工 Staff</span><b>'+esc(st.staff)+'</b></div><div><span>盤點日期</span><b>'+esc(st.date)+' '+esc(st.time)+'</b></div>'+
+    '<div><span>已填 / 總數</span><b>'+(items.length-todo)+' / '+items.length+'</b></div><div><span>低於預期</span><b style="color:#c73a26">'+low.length+'</b></div></div>';
+  if(low.length) h+='<h3>⚠ 需補貨 Below expected</h3><table><tr><th>Item</th><th>Source</th><th>預期</th><th>現有</th></tr>'+
+    low.map(x=>'<tr class="lo"><td>'+esc(x.name)+'</td><td class="s">'+esc(x.source)+'</td><td class="n">'+esc(x.expected)+'</td><td class="n cur">'+esc(fmt(x))+'</td></tr>').join('')+'</table>';
+  LIST.forEach((sh,si)=>{
+    h+='<h3>'+esc(sh.title)+'</h3><table><tr><th>Item</th><th>Source</th><th>Expected 預期</th><th>Current 現有</th></tr>';
+    let cur=null;
+    items.filter(x=>x.sheet===si).forEach(x=>{
+      if(x.cat!==cur){cur=x.cat;h+='<tr class="c"><td colspan="4">'+esc(cur)+'</td></tr>'}
+      h+='<tr class="'+(isLow(x)?'lo':filled(x)?'':'na')+'"><td>'+esc(x.name)+'</td><td class="s">'+esc(x.source)+'</td><td class="n">'+esc(x.expected||'')+'</td><td class="n cur">'+esc(fmt(x))+'</td></tr>';
+    });
+    h+='</table>';
+  });
+  h+='<h3>備註 Notes</h3><div class="note">'+esc(st.notes||'—')+'</div>'+
+    '<div class="sig"><div>盤點員工：'+esc(st.staff)+'</div><div>核對 Checked by：</div></div>';
+  return h;
+}
+$('pdfBtn').onclick=async()=>{
+  if(!window.html2pdf){toast('PDF 工具未載入，請檢查網絡後重試');return}
+  const btn=$('pdfBtn');btn.disabled=true;btn.textContent='生成中…';
+  try{
+    const el=$('pdf');el.innerHTML=buildPdfHtml();
+    pdfName='StockCount_BeastFeast_'+st.date+'_'+st.staff.replace(/[^\w一-鿿-]/g,'')+'.pdf';
+    pdfBlob=await html2pdf().set({
+      margin:[6,0,8,0],filename:pdfName,image:{type:'jpeg',quality:0.92},
+      html2canvas:{scale:1.6,useCORS:true,backgroundColor:'#fff',scrollX:0,scrollY:0},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{mode:['css','legacy'],avoid:['tr','.kv','h3']}
+    }).from(el).outputPdf('blob');
+    st.submittedAt=new Date().toISOString();save();
+    $('fileName').textContent=pdfName;
+    $('doneCard').classList.remove('hidden');
+    $('doneCard').scrollIntoView({behavior:'smooth'});
+  }catch(err){console.error(err);toast('生成失敗：'+err.message)}
+  btn.disabled=false;btn.textContent='重新生成 PDF';
+};
+function download(){
+  const a=document.createElement('a');a.href=URL.createObjectURL(pdfBlob);a.download=pdfName;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+$('dlBtn').onclick=download;
+$('shareBtn').onclick=async()=>{
+  const file=new File([pdfBlob],pdfName,{type:'application/pdf'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:pdfName,text:'Beast Feast 盤點 '+st.date+'（'+st.staff+'）'})}
+    catch(e){if(e.name!=='AbortError')download()}
+  }else{toast('此瀏覽器不支援分享，改為下載');download()}
+};
+
+show(st.started?'count':'start');
+})();
+</script>
+</body>
+</html>
