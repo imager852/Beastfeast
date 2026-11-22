@@ -95,6 +95,11 @@ textarea{min-height:90px;resize:vertical}
 .list li{margin:2px 0}
 .warn{background:var(--gold-soft);border-color:var(--gold)}
 .ok{background:var(--scallion-soft);border-color:rgba(79,125,50,.4)}
+.rec{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.rec .i{flex:1;min-width:0}
+.rec b{display:block;font-size:15px}
+.rec .acts{display:flex;gap:6px}
+.rec .acts a,.rec .acts button{border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:8px 12px;font-size:14px;color:var(--soy);text-decoration:none;font-weight:600}
 .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--soy);color:var(--on-soy);padding:10px 16px;border-radius:10px;font-size:14px;z-index:20}
 
 /* PDF sheet (rendered offscreen) */
@@ -160,7 +165,14 @@ textarea{min-height:90px;resize:vertical}
     <p class="muted" id="resumeHint" style="margin:10px 0 0"></p>
     <p class="muted" id="lastHint" style="margin:6px 0 0"></p>
   </div>
+  <button class="btn ghost" id="recordsBtn">查看過往盤點記錄</button>
   <p class="muted">輸入會自動暫存在這部手機，中途關閉網頁也不會遺失。生成 PDF 時會同時儲存到公司記錄。</p>
+</main>
+
+<!-- 1b. 過往記錄 -->
+<main id="vRecords" class="hidden">
+  <button class="btn ghost" id="recBack" style="margin-bottom:12px">← 返回</button>
+  <div id="recList"></div>
 </main>
 
 <!-- 2. 盤點 -->
@@ -237,9 +249,9 @@ const enc=new TextEncoder(),dec=new TextDecoder();
 function bytesToB64(u8){let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
 function b64ToBytes(b){return Uint8Array.from(atob(b.replace(/\s/g,'')),c=>c.charCodeAt(0))}
 async function api(path,opt){
-  opt=opt||{};
+  opt=opt||{};const accept=opt.accept||'application/vnd.github+json';delete opt.accept;
   const url='https://api.github.com/repos/'+gh.repo+'/contents/'+path.split('/').map(encodeURIComponent).join('/')+(opt.method?'':'?ref='+encodeURIComponent(gh.branch));
-  const r=await fetch(url,Object.assign({},opt,{cache:'no-store',headers:{Authorization:'Bearer '+gh.token,Accept:'application/vnd.github+json'}}));
+  const r=await fetch(url,Object.assign({},opt,{cache:'no-store',headers:{Authorization:'Bearer '+gh.token,Accept:accept}}));
   if(r.status===401)throw Object.assign(new Error('登入已失效'),{auth:true});
   return r;
 }
@@ -356,12 +368,13 @@ $('newBtn').onclick=()=>{
 };
 
 function show(v){
+  $('vRecords').classList.toggle('hidden',v!=='records');
   $('vLogin').classList.toggle('hidden',v!=='login');
   $('vStart').classList.toggle('hidden',v!=='start');
   $('vCount').classList.toggle('hidden',v!=='count');
   $('vReview').classList.toggle('hidden',v!=='review');
   $('bar').classList.toggle('hidden',v!=='count');
-  $('resetBtn').classList.toggle('hidden',v==='start'||v==='login');
+  $('resetBtn').classList.toggle('hidden',v==='start'||v==='login'||v==='records');
   if(v==='count'){renderTabs();renderList();updateProg()}
   if(v==='review'){renderReview()}
   window.scrollTo(0,0);
@@ -515,6 +528,49 @@ $('shareBtn').onclick=async()=>{
     catch(e){if(e.name!=='AbortError')download()}
   }else{toast('此瀏覽器不支援分享，改為下載');download()}
 };
+
+// ---------- past records ----------
+$('recordsBtn').onclick=()=>{show('records');loadRecords()};
+$('recBack').onclick=()=>show('start');
+async function loadRecords(){
+  const L=$('recList');
+  if(gh.local){L.innerHTML='<div class="card muted">過往記錄要在系統連接 GitHub 後才可以查看。現在請查看員工發送的 PDF。</div>';return}
+  L.innerHTML='<p class="muted">載入中…</p>';
+  try{
+    const r=await api('reports');
+    if(r.status===404){L.innerHTML='<div class="card muted">暫時未有記錄。</div>';return}
+    if(!r.ok)throw new Error('GitHub '+r.status);
+    const files=(await r.json()).filter(f=>/\.pdf$/i.test(f.name)).sort((a,b)=>b.name.localeCompare(a.name));
+    if(!files.length){L.innerHTML='<div class="card muted">暫時未有記錄。</div>';return}
+    L.innerHTML=files.map(f=>{
+      const m=f.name.match(/^(\d{4}-\d{2}-\d{2})_(\d{2})(\d{2})_(.*?)(?:_[a-z0-9]{4})?\.pdf$/i);
+      const title=m?m[1]+' '+m[2]+':'+m[3]:f.name, who=m?m[4]:'';
+      return '<div class="rec" data-path="'+esc(f.path)+'" data-name="'+esc(f.name)+'"><div class="i"><b>'+esc(title)+'</b><span class="muted">'+esc(who)+
+        ' · '+Math.round(f.size/1024)+' KB</span></div><div class="acts"><button data-get>取得 PDF</button></div></div>';
+    }).join('');
+  }catch(err){
+    console.error(err);L.innerHTML='<div class="card warn">載入失敗：'+esc(err.message)+'</div>';
+  }
+}
+$('recList').addEventListener('click',async e=>{
+  const row=e.target.closest('.rec');if(!row)return;
+  if(e.target.closest('[data-share]')){
+    const f=new File([row._blob],row.dataset.name,{type:'application/pdf'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:row.dataset.name})}catch(x){}}
+    else toast('此瀏覽器不支援分享，請按「打開」');
+    return;
+  }
+  const b=e.target.closest('[data-get]');if(!b)return;
+  b.disabled=true;b.textContent='載入中…';
+  try{
+    const r=await api(row.dataset.path,{accept:'application/vnd.github.raw'});
+    if(!r.ok)throw new Error('GitHub '+r.status);
+    row._blob=new Blob([await r.arrayBuffer()],{type:'application/pdf'});
+    const url=URL.createObjectURL(row._blob);
+    // links need a fresh tap to open (pop-up blockers), so swap in real buttons
+    row.querySelector('.acts').innerHTML='<a href="'+url+'" target="_blank" rel="noopener">打開</a><button data-share>分享</button>';
+  }catch(err){console.error(err);b.disabled=false;b.textContent='重試';toast('載入失敗：'+err.message)}
+});
 
 // ---------- login ----------
 async function loadData(){
