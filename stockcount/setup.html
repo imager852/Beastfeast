@@ -27,7 +27,7 @@ code{background:#f4e8d6;padding:1px 4px;border-radius:4px}
 <h1>盤點系統設定（管理員）</h1>
 <div class="card">
   <ol>
-    <li>在 GitHub 建立一個<b>私人 (Private)</b> 倉庫，例如 <code>beastfeast-stock</code>，放入 <code>items.json</code>（貨品清單）。</li>
+    <li>在 GitHub 建立一個新倉庫，例如 <code>beastfeast-stock</code>（勾選 Add a README）。建議選 Private；選 Public 也可以，但記錄所有人都看得到。<b>不要用網站倉庫 Beastfeast</b>。貨品清單 <code>items.json</code> 會自動上傳。</li>
     <li>建立 Fine-grained token：GitHub → Settings → Developer settings → Personal access tokens → Fine-grained → 只選該私人倉庫 → Repository permissions → <b>Contents: Read and write</b>。</li>
     <li>在下面填入 token 和員工登入密碼，按「生成設定」。</li>
     <li>把生成的內容存成 <code>stockcount/config.js</code>（Beastfeast 倉庫）。</li>
@@ -54,10 +54,11 @@ code{background:#f4e8d6;padding:1px 4px;border-radius:4px}
   <button id="copy">複製</button>
 </div>
 </main>
+<script src="items.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const enc=new TextEncoder();
-const b64=u8=>btoa(String.fromCharCode.apply(null,u8));
+const b64=u8=>{let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)};
 function msg(t,c){$('msg').textContent=t;$('msg').className=c||'muted'}
 $('go').onclick=async()=>{
   const token=$('token').value.trim(),repo=$('repo').value.trim(),branch=$('branch').value.trim()||'main',code=$('code').value;
@@ -71,10 +72,20 @@ $('go').onclick=async()=>{
     if(r.status===401)return msg('Token 無效','err');
     if(r.status===404)return msg('找不到倉庫，或 token 沒有這個倉庫的權限','err');
     const j=await r.json();
-    if(!j.private)return msg('這個倉庫是公開的！記錄會被所有人看到。請改用私人倉庫。','err');
+    if(/\/beastfeast$/i.test(repo))return msg('不要用網站倉庫，請另外建立一個倉庫（例如 beastfeast-stock）。','err');
+    if(!j.private&&!confirm('這個倉庫是公開的，盤點記錄所有人都看得到。仍然使用？'))return msg('已取消');
     if(j.permissions&&!j.permissions.push)return msg('Token 沒有寫入權限（Contents: Read and write）','err');
     const it=await fetch('https://api.github.com/repos/'+repo+'/contents/items.json?ref='+encodeURIComponent(branch),{headers:{Authorization:'Bearer '+token}});
-    const warn=it.ok?'':'（注意：倉庫內未有 items.json）';
+    let warn='';
+    if(it.status===404){
+      if(!window.STOCK_LIST)warn='（注意：倉庫內未有 items.json）';
+      else{
+        msg('上傳貨品清單 items.json…');
+        const body=JSON.stringify({message:'Add item list',branch,content:b64(enc.encode(JSON.stringify(window.STOCK_LIST,null,1)))});
+        const up=await fetch('https://api.github.com/repos/'+repo+'/contents/items.json',{method:'PUT',headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json'},body});
+        if(!up.ok)return msg('上傳 items.json 失敗（'+up.status+'）。倉庫是否已有 README（不能是全空倉庫）？','err');
+      }
+    }
     msg('加密中…');
     const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),iter=600000;
     const base=await crypto.subtle.importKey('raw',enc.encode(code),'PBKDF2',false,['deriveKey']);
