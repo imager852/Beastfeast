@@ -99,30 +99,31 @@ textarea{min-height:90px;resize:vertical}
 
 /* PDF sheet (rendered offscreen) */
 #pdfWrap{position:fixed;left:-10000px;top:0}
-#pdf{width:794px;padding:34px 38px;background:#fff;color:#1d120b;font-family:var(--body);font-size:11px;line-height:1.3}
-#pdf .ph{display:flex;align-items:center;gap:12px;border-bottom:2px solid #2b1a10;padding-bottom:10px;margin-bottom:10px}
-#pdf .ph img{width:46px;height:46px;border-radius:50%}
-#pdf h2{margin:0;font-size:18px}
-#pdf .ph .r{margin-left:auto;text-align:right;font-size:11px}
-#pdf .kv{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
-#pdf .kv div{border:1px solid #ddd;border-radius:6px;padding:6px 8px}
-#pdf .kv span{display:block;color:#6e5747;font-size:10px}
-#pdf .kv b{font-size:13px}
-#pdf h3{font-size:13px;margin:14px 0 4px;background:#2b1a10;color:#fff;padding:5px 8px;border-radius:4px}
-#pdf table{width:100%;border-collapse:collapse}
-#pdf th,#pdf td{border:1px solid #d9d0c6;padding:3px 6px;text-align:left}
-#pdf th{background:#f4e8d6;font-size:10px}
-#pdf td.n{text-align:center;width:70px}
-#pdf td .zh2{color:#555}
-#pdf td.p{color:#6e5747}
-#pdf td.s{width:90px;color:#6e5747}
-#pdf tr.c td{background:#faf5ee;font-weight:700}
-#pdf tr.lo td{background:#fde3df}
-#pdf tr.lo td.cur{color:#c73a26;font-weight:700}
-#pdf tr.na td.cur{color:#b0a395}
-#pdf .note{border:1px solid #ddd;border-radius:6px;padding:8px;white-space:pre-wrap;min-height:30px}
-#pdf .sig{margin-top:22px;display:flex;justify-content:space-between;font-size:11px}
-#pdf .sig div{width:45%;border-top:1px solid #333;padding-top:4px}
+.pdfp{width:794px;padding:30px 34px;background:#fff;color:#1d120b;font-family:var(--body);font-size:15px;line-height:1.3}
+.pdfp .ph{display:flex;align-items:center;gap:12px;border-bottom:2px solid #2b1a10;padding-bottom:10px;margin-bottom:12px}
+.pdfp .ph img{width:56px;height:56px;border-radius:50%}
+.pdfp h2{margin:0;font-size:24px}
+.pdfp .ph .r{margin-left:auto;text-align:right;font-size:13px}
+.pdfp .kv{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.pdfp .kv div{border:1px solid #ccc;border-radius:6px;padding:7px 9px}
+.pdfp .kv span{display:block;color:#6e5747;font-size:13px}
+.pdfp .kv b{font-size:18px}
+.pdfp h3{font-size:17px;margin:16px 0 6px;background:#2b1a10;color:#fff;padding:6px 10px;border-radius:4px}
+.pdfp table{width:100%;border-collapse:collapse}
+.pdfp th,.pdfp td{border:1px solid #cfc4b8;padding:5px 8px;text-align:left}
+.pdfp th{background:#f4e8d6;font-size:13px}
+.pdfp td.n{text-align:center;width:86px;font-size:16px}
+.pdfp td.cur{font-weight:700}
+.pdfp td .zh2{color:#444}
+.pdfp td.p{color:#6e5747}
+.pdfp td.s{width:100px;color:#6e5747;font-size:13px}
+.pdfp tr.c td{background:#faf5ee;font-weight:700}
+.pdfp tr.lo td{background:#fde3df}
+.pdfp tr.lo td.cur{color:#c73a26}
+.pdfp tr.na td.cur{color:#b0a395;font-weight:400}
+.pdfp .note{border:1px solid #ccc;border-radius:6px;padding:10px;white-space:pre-wrap;min-height:40px}
+.pdfp .sig{margin-top:26px;display:flex;justify-content:space-between;font-size:14px}
+.pdfp .sig div{width:45%;border-top:1px solid #333;padding-top:4px}
 </style>
 </head>
 <body>
@@ -202,7 +203,7 @@ textarea{min-height:90px;resize:vertical}
   <button class="btn" id="reviewBtn">完成 →</button>
 </div></div>
 
-<div id="pdfWrap"><div id="pdf"></div></div>
+<div id="pdfWrap"></div>
 
 <script src="items.js"></script>
 <script src="config.js"></script>
@@ -461,7 +462,9 @@ function buildPdfHtml(){
     '<div><span>已填 / 總數</span><b>'+(items.length-todo)+' / '+items.length+'</b></div><div><span>低於預期</span><b style="color:#c73a26">'+low.length+'</b></div></div>';
   if(low.length) h+='<h3>⚠ 需補貨 Below expected</h3><table><tr><th>Item</th><th>Source</th><th>預期</th><th>上次</th><th>現有</th></tr>'+
     low.map(x=>'<tr class="lo"><td>'+namePdf(x.name)+'</td><td class="s">'+esc(x.source)+'</td><td class="n">'+esc(x.expected)+'</td><td class="n p">'+esc(lastFmt(x))+'</td><td class="n cur">'+esc(fmt(x))+'</td></tr>').join('')+'</table>';
+  const secs=[];
   LIST.forEach((sh,si)=>{
+    secs.push(h);h=''; // summary page, then one section per sheet
     h+='<h3>'+esc(sh.title)+'</h3><table><tr><th>Item</th><th>Source</th><th>Expected 預期</th><th>Last 上次'+(last()?'<br>'+esc(lastLabel()):'')+'</th><th>Current 現有</th></tr>';
     let cur=null;
     items.filter(x=>x.sheet===si).forEach(x=>{
@@ -472,20 +475,24 @@ function buildPdfHtml(){
   });
   h+='<h3>備註 Notes</h3><div class="note">'+esc(st.notes||'—')+'</div>'+
     '<div class="sig"><div>盤點員工：'+esc(st.staff)+'</div><div>核對 Checked by：</div></div>';
-  return h;
+  secs.push(h);return secs; // each section starts a new page (keeps canvas size within phone limits)
 }
 $('pdfBtn').onclick=async()=>{
   if(!window.html2pdf){toast('PDF 工具未載入，請檢查網絡後重試');return}
   const btn=$('pdfBtn');btn.disabled=true;btn.textContent='生成中…';
   try{
-    const el=$('pdf');el.innerHTML=buildPdfHtml();
+    const els=buildPdfHtml().map(h=>{const d=document.createElement('div');d.className='pdfp';d.innerHTML=h;return d});
+    $('pdfWrap').replaceChildren(...els);
     pdfName='StockCount_BeastFeast_'+st.date+'_'+st.staff.replace(/[^\w一-鿿-]/g,'')+'.pdf';
-    pdfBlob=await html2pdf().set({
+    const opt={
       margin:[6,0,8,0],filename:pdfName,image:{type:'jpeg',quality:0.92},
-      html2canvas:{scale:1.6,useCORS:true,backgroundColor:'#fff',scrollX:0,scrollY:0},
+      html2canvas:{scale:1.8,useCORS:true,backgroundColor:'#fff',scrollX:0,scrollY:0},
       jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
       pagebreak:{mode:['css','legacy'],avoid:['tr','.kv','h3']}
-    }).from(el).outputPdf('blob');
+    };
+    let w=html2pdf().set(opt).from(els[0]).toPdf();
+    for(let i=1;i<els.length;i++) w=w.get('pdf').then(pdf=>{pdf.addPage()}).from(els[i]).toContainer().toCanvas().toPdf();
+    pdfBlob=await w.outputPdf('blob');
     st.submittedAt=new Date().toISOString();save();
     $('fileName').textContent=pdfName;
     $('doneCard').classList.remove('hidden');
